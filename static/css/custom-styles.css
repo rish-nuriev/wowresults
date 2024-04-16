@@ -1,0 +1,45 @@
+body .site-nav {
+    background-color: #214204;
+}
+
+.heading-wrapper {
+    padding: 20px 0 0 0;
+}
+
+.results-list-wrapper {
+    margin: 0 auto;
+    width: 800px;
+}
+
+@media (max-width: 320px){
+	#mod-iframe-container-i347453 {display:none;}
+}
+
+.results-list {
+    display: block;
+    margin: 0 auto;
+    width: 600px;
+    padding: 0 0 30px 50px;
+}
+
+.results-list-description {
+    text-align: center;
+    margin: 10px 0;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.match-details {
+    width: 600px;
+    margin: 0 auto;
+    text-align: center;
+    border: 2px;
+    line-height: 2;
+    font-size: 25px;
+}
+
+.goals-block {
+    font-size: 18px;
+    line-height: 0.5;
+    margin-bottom: none;
+}

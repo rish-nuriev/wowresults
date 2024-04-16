@@ -1,0 +1,24 @@
+{% load i18n %}
+
+{% include "django/forms/widgets/input.html" %}
+{% get_current_language as LANGUAGE_CODE %}
+
+<script>
+  $(function () {
+    const DATE_PICKER_OPTIONS = {
+      'ru-RU': {
+        format: 'dd.mm.yyyy',
+        language: 'ru-RU'
+      },
+      'es': {
+        format: 'dd/mm/yyyy',
+        language: 'es-ES'
+      }
+    };
+    let options = DATE_PICKER_OPTIONS['{{ LANGUAGE_CODE }}'];
+    $("input[name='{{ widget.name }}']").datepicker({
+      format: options.format,
+      language: options.language
+    });
+  });
+</script>

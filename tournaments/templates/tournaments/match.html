@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% load custom_filters %}
+
+{% block title %} {{match.tournament.title }} {{ match.tournament.season }}::{{ match.main_team }}-{{ match.opponent }} {% endblock title %}
+
+
+{% block heading %}
+    {% if match.main_team.logo %}
+        <img src="{{ match.main_team.logo.url }}">
+    {% endif %}
+        {{ match.main_team }}-{{ match.opponent }}
+    {% if match.main_team.logo %}
+        <img src="{{ match.opponent.logo.url }}">
+    {% endif %}
+{% endblock heading %}
+
+{% block content %}
+
+
+<div class="container match-details">
+
+    {{match.tournament.title }} {{ match.tournament.season }} </br>
+    {{ match.tour }} Тур </br>
+    {{ match.date }} </br>
+    {{ match.main_team }}-{{ match.opponent }}
+    {% if match.goals_scored != None %} : {{ match.goals_scored }} - {{ match.goals_conceded }} {% endif %}</br>
+    <div class="goals-block" style="margin-bottom: 50px">
+    {% if match.goals_stats %}
+    <div>Голы: </div></br>
+        {% for time, stats in match.goals_stats.items %}
+            {% if stats.team == match.main_team.id_api_football %}
+                <p style="float: left">
+                    {{ time }}' - {{stats.player|translite_player}} 
+                    {% if stats.type == 'Own Goal' %} (автогол) {% endif %}
+                </p></br></br></br>
+            {% endif %}
+            {% if stats.team == match.opponent.id_api_football %}
+                <p style="float: right">
+                    {{ time }}' - {{stats.player|translite_player}} 
+                    {% if stats.type == 'Own Goal' %} (автогол) {% endif %}
+                </p></br></br></br>
+            {% endif %}
+        {% endfor %}
+        </div>
+    {% endif %}
+    {% if match.video %}
+        <iframe width="560" height="315" src="https://www.youtube.com/embed/{{match.video}}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+    {% endif %}
+
+</div>
+
+{% endblock content %}
+
+
+{% block domready %}
+
+
+{% endblock domready %}
+
+

@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% load table %}
+
+{% load custom_filters %}
+
+{% block title %} {{tournament.title }} {{ tournament.season }} - Результаты матчей {% if tour %} {{ tour }} Тур {% endif %} {% endblock title %}
+
+
+{% block heading %}
+    {{ tournament.title}} {{ tournament.season }} </br>
+    {% if tour %} {{ tour }} Тур {% endif %}
+{% endblock heading %}
+
+{% block content %}
+
+
+{% comment %} <table>
+    <tr>
+        <td>Дата</td>
+        <td>Матч</td>
+        <td>Результат</td>
+    </tr>
+
+    {% for match in matches %}
+    <tr>
+        <td>{{ match.date }}</td>
+        <td>{{ match.main_team }} - {{ match.opponent }}</td>
+        <td>{{ match.goals_scored }} - {{ match.goals_conceded }}</td>
+    </tr>
+    {% endfor %}
+</table> {% endcomment %}
+
+
+<div class="container results-list-wrapper">
+
+    {% if tournament.is_regular and tournament.tours_count %}
+
+        <nav aria-label="Page navigation example">
+            
+            <ul class="pagination">
+                <li class="page-item">Туры:</li>
+            {% for tour_number in tours_range %}
+            <li class="page-item {% if tour == tour_number %} active {% endif %}"><a class="page-link" href="{% url "tour" t_slug tour_number %}">{{ tour_number }} </a></li>
+            {% endfor %}
+            </ul>
+        </nav>
+        
+        
+
+        <div class="results-list-description">Календарь, результаты матчей и турнирная таблица</div>
+        {% regroup matches by tour as tours %}
+
+        <ul class="results-list">
+            {% for t in tours %}
+            {% if not tour %} <li><a href="{% url "tour" t_slug t.grouper %}">{{ t.grouper }} Тур</a> {% endif %}
+                <ul>
+                    {% for match in t.list %}
+                    <li><span data-toggle="tooltip" data-placement="top" title="Время Московское">{{ match.date }}</span> 
+                        {% if match.status == 'TBD' %} <span class="tbd" data-toggle="tooltip" data-placement="top" title="Точная дата неизвестна">(?)</span> {% endif %} ||  
+                        <a href="{% url "match" match.tournament.slug t.grouper match.id %}"> {{ match.main_team }}-{{ match.opponent }} </a>
+                        {% if match.goals_scored != None %} : {{ match.goals_scored }} - {{ match.goals_conceded }} {% endif %} - {{statuses|get_item:match.status}}</li>
+                    {% endfor %}
+                </ul>
+            </br>
+            {% if tour %} </li> {% endif %}
+            {% endfor %}
+        </ul>
+
+        {% show_table t_slug rtypes tour %}
+
+    
+    {% endif %}
+
+</div>
+{% endblock content %}
+
+
+{% block domready %}
+    $('[data-toggle="tooltip"]').tooltip();
+{% endblock domready %}
+
+

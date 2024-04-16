@@ -1,0 +1,32 @@
+
+{% load custom_filters %}
+
+<table class="table table-striped" style="width: auto; margin: 0 auto">
+    <tr>
+        <th width="40%">Команда</th>
+        <th>Игр</th>
+        <th>Побед</th>
+        <th>Ничей</th>
+        <th>Поражений</th>
+        <th>Мячи</th>
+        <th>Очков</th>
+    </tr>
+    
+    {% for match in matches %}
+    <tr>
+        <td>{{ match.main_team__title }}</td>
+        <td>{{ match.cnt }}</td>
+        <td>{{ match.results|get_cnt:rtypes.Win }}</td>
+        <td>{{ match.results|get_cnt:rtypes.Draw }}</td>
+        <td>{{ match.results|get_cnt:rtypes.Lose }}</td>
+        <td>{{ match.goals_scored }}-{{ match.goals_conceded }}</td>
+        <td>{{ match.points }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+{% comment %} <ul>
+    {% for m in matches %}
+        <li>{{ m }}</li>
+    {% endfor %}
+</ul> {% endcomment %}
