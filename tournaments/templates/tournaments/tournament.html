@@ -69,10 +69,17 @@
             {% endfor %}
         </ul>
 
-        {% show_table t_slug rtypes tour %}
+        {% show_table tournament tour %}
 
     
     {% endif %}
+
+    <div class="events_block">
+    {% for event in tournament.events.all %}
+        <p>{{ event.description }} </p>
+    {% endfor %}
+    </div>
+
 
 </div>
 {% endblock content %}

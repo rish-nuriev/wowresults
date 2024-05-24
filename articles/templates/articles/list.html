@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+{% load tournament_tags %}
+
+<div class="row posts-entry">
+    <div class="col-lg-8">
+
+      {% for post in posts  %}
+      <div class="blog-entry d-flex blog-entry-search-item">
+        <div class="post-list-img">
+          <a href="{{ post.get_absolute_url }}" class="img-link me-4">
+            {% if post.tournament.logo %}
+              <img src="{{ post.tournament.logo.url }}" alt="Image" class="img-fluid">
+            {% else %}
+              <img src="{{ default_image }}" alt="Image" class="img-fluid">
+            {% endif %}
+          </a>
+        </div>
+        <div>
+          <span class="date">{{ post.time_create }} &bullet; <a href="{{ post.tournament.get_absolute_url }}">{{ post.tournament.title }}</a></span>
+          <h2><a href="{{ post.get_absolute_url }}">{{ post.title }}</a></h2>
+          {% autoescape off %}
+          <p>{{ post.content|truncatewords_html:15 }}</p>
+          {% endautoescape %}
+          <p><a href="{{ post.get_absolute_url }}" class="btn btn-sm btn-outline-primary">Читать далее</a></p>
+        </div>
+      </div>
+      {% endfor %}
+
+
+      
+
+      <div class="row text-start pt-5 border-top">
+        <div class="col-md-12">
+
+          {% include "pagination.html" with page=page_obj %}
+          
+        </div>
+      </div>
+
+    </div>
+
+    <div class="col-lg-4 sidebar">
+      <!-- END sidebar-box -->
+      <div class="sidebar-box">
+        <h3 class="heading">Популярные статьи</h3>
+        <div class="post-entry-sidebar">
+          <ul>
+            <li>
+              <a href="">
+                <img src="images/img_1_sq.jpg" alt="Image placeholder" class="me-4 rounded">
+                <div class="text">
+                  <h4>There’s a Cool New Way for Men to Wear Socks and Sandals</h4>
+                  <div class="post-meta">
+                    <span class="mr-2">March 15, 2018 </span>
+                  </div>
+                </div>
+              </a>
+            </li>
+            <li>
+              <a href="">
+                <img src="images/img_2_sq.jpg" alt="Image placeholder" class="me-4 rounded">
+                <div class="text">
+                  <h4>There’s a Cool New Way for Men to Wear Socks and Sandals</h4>
+                  <div class="post-meta">
+                    <span class="mr-2">March 15, 2018 </span>
+                  </div>
+                </div>
+              </a>
+            </li>
+            <li>
+              <a href="">
+                <img src="images/img_3_sq.jpg" alt="Image placeholder" class="me-4 rounded">
+                <div class="text">
+                  <h4>There’s a Cool New Way for Men to Wear Socks and Sandals</h4>
+                  <div class="post-meta">
+                    <span class="mr-2">March 15, 2018 </span>
+                  </div>
+                </div>
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <!-- END sidebar-box -->
+
+      <div class="sidebar-box">
+        <h3 class="heading">Статьи по Турнирам</h3>
+
+        {% show_tournaments %}
+
+
+      </div>
+      <!-- END sidebar-box -->
+
+      <div class="sidebar-box">
+
+        {% show_tags_from_taggit %}
+
+      </div>
+
+    </div>
+  </div>
+
+
+{% endblock content %}

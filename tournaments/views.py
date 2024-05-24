@@ -1,16 +1,28 @@
 from datetime import datetime, timedelta, timezone
 import tempfile
+import time
 import requests
 import redis
 from django.core import files
 
+from django.contrib.auth.decorators import permission_required, login_required
 from django.http import HttpResponse, HttpResponseNotFound, Http404
 from django.shortcuts import get_object_or_404, render
 from django.views.generic import DetailView, ListView
+from django.views.decorators.http import require_POST
 from django.conf import settings
-from tournaments.apifootball import ApiFootball
+
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import (
+    authentication_classes,
+    permission_classes,
+    api_view,
+)
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from tournaments.models import Match, Stage, Team, Tournament
+from tournaments.apifootball import ApiFootball
+from .helpers import *
 
 
 if settings.LOCAL_MACHINE:
@@ -43,8 +55,9 @@ class MatchesByTournament(ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        tournament = Tournament.objects.get(slug=self.kwargs["t_slug"])
-        context["rtypes"] = Match.ResultVals
+        tournament = Tournament.objects.prefetch_related("events").get(
+            slug=self.kwargs["t_slug"]
+        )
         context["statuses"] = dict(Match.Statuses.choices)
         context["tournament"] = tournament
         context["tours_range"] = range(1, tournament.tours_count + 1)
@@ -58,10 +71,6 @@ class ShowMatch(DetailView):
 
     def get_object(self, queryset=None):
         return get_object_or_404(Match, pk=self.kwargs["match_id"])
-
-
-def home(request):
-    return render(request, "tournaments/home.html", {"title": "Главная"})
 
 
 def page_not_found(request, exception):
@@ -81,30 +90,55 @@ def get_or_create_team(tournament, match, state):
     return team
 
 
-def get_results(request):
+# @permission_required(["tournaments.add_match", "tournaments.change_match"])
+# @permission_classes((IsAuthenticated, ))
+# @authentication_classes((JWTAuthentication, ))
+# @api_view(['GET'])
+def get_results(request, start_date=""):
+    """
+    Метод запрашивает результаты матчей через ApiFootball и записывает их в базу данных.
+    По умолчанию выбирается текущая дата и обновляются результаты текущих турниров.
+    То есть турниры по умолчанию фльтруются по полю current=True.
+    Если же передана дата то она считается стартовой и проверяется через хранилище Redis.
+    Если дата уже была обработана, то берется следующий день и опять проверяется в Redis.
+    И так до тех пор пока не найдена необработанная дата либо дата не станет текущей.
+    Турнир в таком случае выбирается по принципу сезона.
+    И так как сезон вида "2023-2024" то из переданной даты берется год и проверяется - попадает ли в годы сезона.
+    Текущая дата в данном случае не обрабатывается.
+    """
+
+    if not settings.LOCAL_MACHINE:
+        return HttpResponse("This is for local machine only")
 
     api_football = ApiFootball()
 
     endpoint = "fixtures"
 
-    tournaments = Tournament.objects.filter(current=True)
+    today = datetime.now(timezone.utc).date()
 
-    for t in tournaments:
+    date_to_check = get_date_to_check(r, start_date) if start_date else today
+    api_requests_count = get_api_requests_count(r)
 
-        check_date = datetime(2023, 11, 4)
-        end_date = datetime(2023, 11, 4)
+    while date_to_check <= today:
 
-        td = timedelta(days=1)
+        if api_requests_count >= 100:
+            return HttpResponse("we have reached the limit of the requests")
 
-        while check_date <= end_date:
+        if start_date:
+            tournaments = Tournament.objects.filter(
+                current=True, is_regular=True, season__contains=date_to_check.year
+            )
+            print(tournaments)
+        else:
+            tournaments = Tournament.objects.filter(current=True)
+
+        for t in tournaments:
 
             payload = {
                 "league": t.league_api_football,
                 "season": t.season_api_football,
-                "date": check_date.strftime("%Y-%m-%d"),
+                "date": date_to_check.strftime("%Y-%m-%d"),
             }
-
-            check_date += td
 
             response = api_football.send_request(endpoint, payload)
 
@@ -113,6 +147,8 @@ def get_results(request):
                     "Response Errors: please check the logs for details"
                 )
 
+            increase_api_requests_count(r)
+            api_requests_count += 1
             matches = response["response"]
             for match in matches:
                 team1 = get_or_create_team(t, match, "home")
@@ -130,14 +166,14 @@ def get_results(request):
                         },
                     )
 
-                date = match["fixture"]["date"]
+                match_date = match["fixture"]["date"]
 
                 is_moderated = match["fixture"]["status"]["short"] == "FT"
 
                 Match.objects.update_or_create(
                     id_api_football=match["fixture"]["id"],
                     defaults={
-                        "date": date,
+                        "date": match_date,
                         "status": match["fixture"]["status"]["short"],
                         "goals_scored": match["goals"]["home"],
                         "goals_conceded": match["goals"]["away"],
@@ -146,7 +182,7 @@ def get_results(request):
                         "points_received": Match.points_received,
                     },
                     create_defaults={
-                        "date": date,
+                        "date": match_date,
                         "main_team": team1,
                         "opponent": team2,
                         "status": match["fixture"]["status"]["short"],
@@ -160,16 +196,37 @@ def get_results(request):
                     },
                 )
 
-    return HttpResponse("Request has been completed")
+        # запросы к текущей дате могут выполняться многократно, поэтому не маркируем
+        if date_to_check != today:
+            set_date_processed(r, date_to_check)
+            print("Processed date", date_to_check)
+        else:
+            print("Today's date has been processed and ready for the next call")
+            return HttpResponse("Today's date has been processed and ready for the next call")
+        date_to_check += timedelta(days=1)
+        time.sleep(60)
+
+    return HttpResponse("All requests have been completed")
 
 
+# @require_POST
+# @permission_required(["tournaments.add_team", "tournaments.change_team"])
 def get_teams(request):
+
+    if not settings.LOCAL_MACHINE:
+        return HttpResponse("This is for local machine only")
+
+    api_requests_count = get_api_requests_count(r)
+    if api_requests_count >= 100:
+        return HttpResponse("we have reached the limit of the requests")
 
     api_football = ApiFootball()
 
     endpoint = "teams"
 
     tournaments = Tournament.objects.filter(current=True)
+
+    print(tournaments)
 
     for t in tournaments:
 
@@ -182,6 +239,8 @@ def get_teams(request):
 
         if response["errors"]:
             return HttpResponse("Response Errors: please check the logs for details")
+
+        increase_api_requests_count(r)
 
         teams = response["response"]
 
@@ -200,23 +259,24 @@ def get_teams(request):
                 logo_response = requests.get(logo_url, stream=True, timeout=10)
                 if logo_response.status_code == requests.codes.ok:
                     file_name = logo_url.split("/")[-1]
-
-                # Create a temporary file
-                tmp_file = tempfile.NamedTemporaryFile()
-                # Read the streamed image in sections
-                for block in logo_response.iter_content(1024 * 8):
-                    # If no more file then stop
-                    if not block:
-                        break
-                    # Write image block to temporary file
-                    tmp_file.write(block)
-                # Save the temporary image to the model#
-                # This saves the model so be sure that it is valid
-                team_obj.logo.save(file_name, files.File(tmp_file))
+                    # Create a temporary file
+                    tmp_file = tempfile.NamedTemporaryFile()
+                    # Read the streamed image in sections
+                    for block in logo_response.iter_content(1024 * 8):
+                        # If no more file then stop
+                        if not block:
+                            break
+                        # Write image block to temporary file
+                        tmp_file.write(block)
+                    # Save the temporary image to the model#
+                    # This saves the model so be sure that it is valid
+                    team_obj.logo.save(file_name, files.File(tmp_file))
 
     return HttpResponse("Request completed")
 
 
+# @require_POST
+# @permission_required(["tournaments.change_match"])
 def get_goals_stats(request):
 
     if not settings.LOCAL_MACHINE:
@@ -233,48 +293,44 @@ def get_goals_stats(request):
             goals_stats__isnull=True,
         )
         .select_related("main_team", "opponent")
-        .order_by("-id")[:10]
+        .order_by("id")[:10]
     )
 
-    date_utc = datetime.now(timezone.utc).strftime("%Y_%m_%d")
+    print(matches)
 
-    if not r.exists(f"{date_utc}_api_requests_count"):
-        r.set(f"{date_utc}_api_requests_count", 0)
-        r.expire(f"{date_utc}_api_requests_count", 86400)
+    api_requests_count = get_api_requests_count(r)
 
-    api_requests_count = int(r.get(f"{date_utc}_api_requests_count"))
-
-    if api_requests_count < 100:
-
-        for m in matches:
-
-            payload = {
-                "fixture": m.id_api_football,
-            }
-
-            response = api_football.send_request(endpoint, payload)
-
-            if response["errors"]:
-                return HttpResponse(
-                    "Response Errors: please check the logs for details"
-                )
-
-            r.incr(f"{date_utc}_api_requests_count", 1)
-
-            events = response["response"]
-            goals_stats = {}
-
-            for event in events:
-                if event["type"] == "Goal":
-                    goals_stats[event["time"]["elapsed"]] = {
-                        "team": event["team"]["id"],
-                        "player": event["player"]["name"],
-                        "type": event["detail"],
-                    }
-
-            m.goals_stats = goals_stats
-            m.save()
-    else:
+    if api_requests_count >= 100:
         return HttpResponse("we have reached the limit of the requests")
+
+    for m in matches:
+
+        payload = {
+            "fixture": m.id_api_football,
+        }
+
+        response = api_football.send_request(endpoint, payload)
+
+        if response["errors"]:
+            return HttpResponse("Response Errors: please check the logs for details")
+
+        increase_api_requests_count(r)
+
+        events = response["response"]
+        goals_stats = {}
+
+        for event in events:
+            if event["type"] == "Goal":
+                minute = event["time"]["elapsed"]
+                if event["time"]["extra"]:
+                    minute += event["time"]["extra"]
+                goals_stats[minute] = {
+                    "team": event["team"]["id"],
+                    "player": event["player"]["name"],
+                    "type": event["detail"],
+                }
+
+        m.goals_stats = goals_stats
+        m.save()
 
     return HttpResponse("Request has been completed")

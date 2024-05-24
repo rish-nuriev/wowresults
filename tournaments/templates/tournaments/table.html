@@ -3,24 +3,36 @@
 
 <table class="table table-striped" style="width: auto; margin: 0 auto">
     <tr>
+        <th></th>
         <th width="40%">Команда</th>
         <th>Игр</th>
         <th>Побед</th>
         <th>Ничей</th>
         <th>Поражений</th>
-        <th>Мячи</th>
+        <th>Мячей(З-П)</th>
         <th>Очков</th>
     </tr>
     
     {% for match in matches %}
     <tr>
+        <td>{{ forloop.counter }}</td>
         <td>{{ match.main_team__title }}</td>
         <td>{{ match.cnt }}</td>
         <td>{{ match.results|get_cnt:rtypes.Win }}</td>
         <td>{{ match.results|get_cnt:rtypes.Draw }}</td>
         <td>{{ match.results|get_cnt:rtypes.Lose }}</td>
         <td>{{ match.goals_scored }}-{{ match.goals_conceded }}</td>
-        <td>{{ match.points }}</td>
+
+        {% with events_by_team|get_item:match.main_team__title as event %}
+
+            {% if match.main_team__title in events_by_team %}
+                <td>{{ match.points|apply_events_rules:event }}</td>
+            {% else %}
+                <td>{{ match.points }}</td>
+            {% endif %}
+
+        {% endwith %}
+        
     </tr>
     {% endfor %}
 </table>

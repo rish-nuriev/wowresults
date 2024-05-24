@@ -73,7 +73,16 @@ def translite_player(name):
         name = "И." + name[2:]
     elif name == "G. Bijl":
         name = "Бэйл"
-    elif name == 'L. Đorđević':
+    elif name == "L. Đorđević":
         name = "Джорджевич"
 
     return translit(name, "cstm")
+
+
+@register.filter
+def apply_events_rules(points, event):
+    if event['operation'] == 'R':
+        points -= event['value']
+    elif event['operation'] == 'A':
+        points += event['value']
+    return points

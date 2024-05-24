@@ -8,7 +8,7 @@ from tournaments.widgets import CustomDatePickerInput
 
 from .forms import TeamForm
 
-from .models import Country, Stage, Team, Tournament, Match
+from .models import Country, Event, Stage, Team, Tournament, Match
 
 
 @admin.register(Country)
@@ -29,10 +29,19 @@ class TournamentAdmin(admin.ModelAdmin):
         "current",
         "is_regular",
         "tours_count",
+        "logo",
         "order",
     ]
     prepopulated_fields = {"slug": ("title", "season")}
-    list_display = ("title", "season", "country", "current", "is_regular", "tours_count", "order")
+    list_display = (
+        "title",
+        "season",
+        "country",
+        "current",
+        "is_regular",
+        "tours_count",
+        "order",
+    )
 
 
 @admin.register(Team)
@@ -41,7 +50,7 @@ class TeamAdmin(admin.ModelAdmin):
     fields = ["title", "city", "slug", "country", "id_api_football", "is_moderated"]
     prepopulated_fields = {"slug": ("title", "city")}
     list_display = ("title", "city", "slug", "country", "is_moderated")
-    list_filter = ["country", 'is_moderated']
+    list_filter = ["country", "is_moderated"]
 
 
 @admin.register(Stage)
@@ -85,9 +94,15 @@ class MatchAdmin(admin.ModelAdmin):
 
     list_filter = ["tournament", "stage", "status"]
     formfield_overrides = {models.DateField: {"widget": CustomDatePickerInput}}
-    search_fields = ['main_team__title', 'opponent__title']
+    search_fields = ["main_team__title", "opponent__title"]
 
     ordering = ["date", "id"]
 
     def get_queryset(self, request: HttpRequest) -> QuerySet[Any]:
         return Match.main_matches
+
+
+@admin.register(Event)
+class EventAdmin(admin.ModelAdmin):
+    # fields = '__all__'
+    list_display = ("title", "tournament", "team", "operation", "value", "tour")

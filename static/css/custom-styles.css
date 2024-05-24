@@ -43,3 +43,16 @@ body .site-nav {
     line-height: 0.5;
     margin-bottom: none;
 }
+
+.posts-entry h3 {
+    font-size: 14px;
+}
+
+.post-list-img {
+    width: 200px; 
+    text-align: center;
+}
+
+.posts-entry .blog-entry-search-item .img-link {
+    width: 200px;
+}

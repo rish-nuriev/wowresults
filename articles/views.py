@@ -1,18 +1,51 @@
 from django.conf import settings
-from django.shortcuts import render
+from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
+from django.shortcuts import get_object_or_404, render
 from django.utils import dateformat
 from django.utils.text import slugify
+from django.views.generic import DetailView, ListView
+from articles.helpers import gen_match_text
 from articles.models import Article
 
 from tournaments.models import Match
 
+
 def translit_to_eng(s: str) -> str:
-    d = {'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd',
-         'е': 'e', 'ё': 'yo', 'ж': 'zh', 'з': 'z', 'и': 'i', 'к': 'k',
-         'л': 'l', 'м': 'm', 'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r',
-         'с': 's', 'т': 't', 'у': 'u', 'ф': 'f', 'х': 'h', 'ц': 'c', 'ч': 'ch',
-         'ш': 'sh', 'щ': 'shch', 'ь': '', 'ы': 'y', 'ъ': '', 'э': 'r', 'ю': 'yu', 'я': 'ya'}
+    d = {
+        "а": "a",
+        "б": "b",
+        "в": "v",
+        "г": "g",
+        "д": "d",
+        "е": "e",
+        "ё": "yo",
+        "ж": "zh",
+        "з": "z",
+        "и": "i",
+        "к": "k",
+        "л": "l",
+        "м": "m",
+        "н": "n",
+        "о": "o",
+        "п": "p",
+        "р": "r",
+        "с": "s",
+        "т": "t",
+        "у": "u",
+        "ф": "f",
+        "х": "h",
+        "ц": "c",
+        "ч": "ch",
+        "ш": "sh",
+        "щ": "shch",
+        "ь": "",
+        "ы": "y",
+        "ъ": "",
+        "э": "r",
+        "ю": "yu",
+        "я": "ya",
+    }
 
     return "".join(map(lambda x: d[x] if d.get(x, False) else x, s.lower()))
 
@@ -23,33 +56,107 @@ def create(request, match_day):
         Match.main_matches.values(
             "tournament__id", "tournament__title", "tournament__season"
         )
-        .filter(date=match_day)
+        .filter(date__contains=match_day)
         .distinct()
     )
 
     for tournament in tournaments_to_process:
         matches = Match.main_matches.filter(
-            tournament=tournament["tournament__id"], date=match_day
+            tournament=tournament["tournament__id"], date__contains=match_day
         )
         nice_date = dateformat.format(match_day, settings.DATE_FORMAT)
         title = f'Результаты матчей: {tournament["tournament__title"]} {tournament["tournament__season"]} - {nice_date}'
-        text = f'<h2>{nice_date} состоялись следующие матчи:</h2></br><ul>'
+
+        content = '<div class="article_wrapper">'
+        content += f'<div class="results_description">{nice_date} '
+
         for match in matches:
-            text += f'<li>{ match.main_team }-{ match.opponent } : { match.goals_scored } - { match.goals_conceded }</li>'
-        text += '</ul>'
-        slug = slugify(translit_to_eng(title))
-
-        defaults = {
-            'title': title,
-            'slug': slug,
-            'content': text,
-            'tournament_id': tournament['tournament__id'],
-            'match_day': match_day
-        }
-
-        Article.objects.update_or_create(
-            slug = slug,
-            defaults = defaults
+            content += gen_match_text(
+                match.main_team,
+                match.opponent,
+                match.result,
+                match.goals_scored,
+                match.goals_conceded,
+            )
+        content += "</div>"
+        content += (
+            "<h3>Предлагаем вашему вниманию результаты завершившихся матчей:</h3>"
         )
 
-    return render(request, "articles/create.html", {"tourns": tournaments_to_process})
+        content += "<ul>"
+        for match in matches:
+            content += f"<li><a href='{ match.get_absolute_url() }'>{ match.main_team }-{ match.opponent } : { match.goals_scored } - { match.goals_conceded }</a></li>"
+        content += "</ul>"
+
+        content += "<p>Текст статьи обновляется</p>"
+
+        content += "</div>"
+
+        slug = slugify(translit_to_eng(title))
+
+        tags = [
+            match.main_team.title,
+            match.opponent.title,
+            tournament["tournament__title"],
+            f"матчи {nice_date}",
+            f'{tournament["tournament__title"]} {tournament["tournament__season"]} {match.tour} тур',
+        ]
+
+        defaults = {
+            "title": title,
+            "slug": slug,
+            "content": content,
+            "tournament_id": tournament["tournament__id"],
+            "match_day": match_day,
+            "is_published": True,
+        }
+
+        article, created = Article.objects.get_or_create(slug=slug, defaults=defaults)
+        for tag in tags:
+            article.tags.add(tag)
+        article.save()
+
+        # Article.objects.update_or_create(slug=slug, defaults=defaults, create_defaults=create_defaults)
+
+    return HttpResponse(f"All the articles for {match_day} have been created/updated")
+
+
+class ShowArticle(DetailView):
+    template_name = "articles/article.html"
+    context_object_name = "article"
+
+    def get_object(self, queryset=None):
+        return get_object_or_404(Article, slug=self.kwargs["article_slug"])
+
+
+class ArticleListView(ListView):
+    """
+    Представление списка постов
+    """
+
+    queryset = Article.published.select_related("tournament").all()
+    context_object_name = "posts"
+    paginate_by = 5
+    template_name = "articles/list.html"
+
+    extra_context = {
+        "default_image": settings.DEFAULT_POST_IMAGE,
+    }
+
+
+class ArticlesByTournament(ListView):
+    template_name = "articles/list.html"
+    context_object_name = "posts"
+    allow_empty = False
+
+    def get_queryset(self):
+        return Article.published.filter(
+            tournament__slug=self.kwargs["t_slug"]
+        ).select_related("tournament")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        tournament = context["posts"][0].tournament
+        context["tournament"] = tournament
+        context.update(kwargs)
+        return context

@@ -1,3 +1,4 @@
+from email.policy import default
 from django.urls import reverse
 from django.utils.text import slugify
 import django.utils.timezone
@@ -34,6 +35,7 @@ class Tournament(models.Model):
     points_per_win = models.IntegerField(default=3, verbose_name="Очков за победу")
     points_per_draw = models.IntegerField(default=1, verbose_name="Очков за ничью")
     order = models.IntegerField(default=1, verbose_name="Порядок", db_index=True)
+    logo = models.ImageField(upload_to="images/tournaments/", null=True)
 
     class Meta:
         verbose_name = "Турнир"
@@ -45,6 +47,9 @@ class Tournament(models.Model):
 
     def get_absolute_url(self):
         return reverse("tournament", kwargs={"t_slug": self.slug})
+
+    def get_articles_url(self):
+        return reverse("articles_by_tournament", kwargs={"t_slug": self.slug})
 
 
 class Country(models.Model):
@@ -73,7 +78,7 @@ class Team(models.Model):
         verbose_name="Страна",
     )
     is_moderated = models.BooleanField(default=True, verbose_name="Проверка пройдена")
-    logo = models.ImageField(upload_to='images/teams/', null=True)
+    logo = models.ImageField(upload_to="images/teams/", null=True)
 
     class Meta:
         verbose_name = "Команда"
@@ -124,7 +129,9 @@ class Match(models.Model):
     )
     group = models.CharField(max_length=2, verbose_name="Группа", blank=True, null=True)
     tour = models.IntegerField(blank=True, null=True, default=0, verbose_name="Тур")
-    date = models.DateTimeField(default=django.utils.timezone.now, verbose_name="Дата и время")
+    date = models.DateTimeField(
+        default=django.utils.timezone.now, verbose_name="Дата и время"
+    )
     main_team = models.ForeignKey(
         "Team",
         on_delete=models.PROTECT,
@@ -189,6 +196,16 @@ class Match(models.Model):
     def __str__(self):
         return f"{self.main_team.title} - {self.opponent.title}"
 
+    def get_absolute_url(self):
+        return reverse(
+            "match",
+            kwargs={
+                "t_slug": self.tournament.slug,
+                "tour": self.tour,
+                "match_id": self.id,
+            },
+        )
+
 
 class Stage(models.Model):
     title = models.CharField(max_length=255, verbose_name="Стадия турнира")
@@ -202,3 +219,40 @@ class Stage(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class Event(models.Model):
+
+    class Operations(models.TextChoices):
+        ADD = "A", "Добавить"
+        REMOVE = "R", "Отнять"
+        NOTHING = "N", "Не менять"
+
+    title = models.CharField(max_length=255, verbose_name="Событие")
+    description = models.TextField(blank=True, verbose_name="Описание события")
+    tournament = models.ForeignKey(
+        Tournament,
+        on_delete=models.CASCADE,
+        related_name="events",
+        verbose_name="Турнир",
+    )
+    team = models.ForeignKey(
+        Team,
+        on_delete=models.PROTECT,
+        related_name="events",
+        verbose_name="Команда",
+        blank=True,
+        null=True,
+    )
+    operation = models.CharField(
+        max_length=1,
+        verbose_name="Операция",
+        choices=Operations.choices,
+        default=Operations.NOTHING,
+    )
+    value = models.IntegerField(default=0)
+    tour = models.IntegerField(default=0)
+
+    class Meta:
+        verbose_name = "Событие"
+        verbose_name_plural = "События"

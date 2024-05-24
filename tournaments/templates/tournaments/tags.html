@@ -1,0 +1,8 @@
+{% load custom_filters %}
+
+<h3 class="heading">Теги</h3>
+        <ul class="tags">
+            {% for tag in ten_tags  %}
+                <li><a href="/{{all_tags|get_item:tag}}">{{tag}}</a></li>
+            {% endfor %}
+        </ul>

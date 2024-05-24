@@ -35,12 +35,14 @@
                 <p style="float: left">
                     {{ time }}' - {{stats.player|translite_player}} 
                     {% if stats.type == 'Own Goal' %} (автогол) {% endif %}
+                    {% if stats.type == 'Penalty' %} (пенальти) {% endif %}
                 </p></br></br></br>
             {% endif %}
             {% if stats.team == match.opponent.id_api_football %}
                 <p style="float: right">
                     {{ time }}' - {{stats.player|translite_player}} 
                     {% if stats.type == 'Own Goal' %} (автогол) {% endif %}
+                    {% if stats.type == 'Penalty' %} (пенальти) {% endif %}
                 </p></br></br></br>
             {% endif %}
         {% endfor %}

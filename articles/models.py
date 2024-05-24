@@ -1,5 +1,6 @@
 from django.db import models
 from django.urls import reverse
+from taggit.managers import TaggableManager
 
 from tournaments.models import Tournament
 
@@ -9,6 +10,8 @@ class PublishedManager(models.Manager):
 
 
 class Article(models.Model):
+
+    tags = TaggableManager()
 
     class Status(models.IntegerChoices):
         DRAFT = 0, 'Черновик'

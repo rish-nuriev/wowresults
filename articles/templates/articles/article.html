@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% load custom_filters %}
+
+{% block title %} {{ article.title }} {% endblock title %}
+
+
+{% block heading %}
+    {{ article.title }}
+{% endblock heading %}
+
+{% block content %}
+
+
+<div class="container article">
+
+    {% autoescape off %}
+        {{ article.content }}
+        {% if article.additional_content %}
+            {{ article.additional_content }}
+        {% endif %}
+    {% endautoescape %}
+
+    <p class="tags">Теги: {{ article.tags.all|join:", " }}</p>
+
+</div>
+
+{% endblock content %}
+
+
+{% block domready %}
+
+
+{% endblock domready %}
+
+

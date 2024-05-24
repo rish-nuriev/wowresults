@@ -1,0 +1,7 @@
+
+
+<ul class="categories">
+    {% for t in tournaments %}
+        <li><a href="{{ t.get_articles_url }}">{{t.title}} ({{t.season}}) <span>({{t.total}})</span></a></li>
+    {% endfor %}
+</ul>
