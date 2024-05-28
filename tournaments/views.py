@@ -157,7 +157,10 @@ def get_results(request, start_date=""):
                 tour = 0
                 stage = None
                 if t.is_regular:
-                    tour = int(match["league"]["round"].split(" - ")[1])
+                    try:
+                        tour = int(match["league"]["round"].split(" - ")[1])
+                    except IndexError:
+                        print('The match is out of regular')
                 else:
                     stage, created = Stage.objects.get_or_create(
                         title_api_football=match["league"]["round"],
