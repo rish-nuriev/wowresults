@@ -26,6 +26,7 @@ from .helpers import *
 
 
 if settings.LOCAL_MACHINE:
+    # Подключаемся к редис только с локальной машины
     # соединить с redis
     r = redis.Redis(
         host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=settings.REDIS_DB
@@ -119,7 +120,8 @@ def get_results(request, start_date=""):
     date_to_check = get_date_to_check(r, start_date) if start_date else today
     api_requests_count = get_api_requests_count(r)
 
-    while date_to_check <= today:
+    # while date_to_check <= today:
+    while True:
 
         if api_requests_count >= 100:
             return HttpResponse("we have reached the limit of the requests")
@@ -160,7 +162,7 @@ def get_results(request, start_date=""):
                     try:
                         tour = int(match["league"]["round"].split(" - ")[1])
                     except IndexError:
-                        print('The match is out of regular')
+                        print("The match is out of regular")
                 else:
                     stage, created = Stage.objects.get_or_create(
                         title_api_football=match["league"]["round"],
@@ -199,15 +201,22 @@ def get_results(request, start_date=""):
                     },
                 )
 
-        # запросы к текущей дате могут выполняться многократно, поэтому не маркируем
-        if date_to_check != today:
+        # запросы к текущей и будущей дате могут выполняться многократно, поэтому не маркируем
+        if date_to_check < today:
             set_date_processed(r, date_to_check)
             print("Processed date", date_to_check)
         else:
             print("Today's date has been processed and ready for the next call")
-            return HttpResponse("Today's date has been processed and ready for the next call")
+            return HttpResponse(
+                "Today's date has been processed and ready for the next call"
+            )
         date_to_check += timedelta(days=1)
         time.sleep(60)
+
+        # Код поправлен с целью обрабатывать даты в будущем,
+        # но пока допустим лишь один запрос к конкретной дате
+        if date_to_check > today:
+            break
 
     return HttpResponse("All requests have been completed")
 
