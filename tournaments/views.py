@@ -201,16 +201,18 @@ def get_results(request, start_date=""):
                     },
                 )
 
+        print("Processed date", date_to_check)
+
         # запросы к текущей и будущей дате могут выполняться многократно, поэтому не маркируем
         if date_to_check < today:
             set_date_processed(r, date_to_check)
-            print("Processed date", date_to_check)
         else:
-            print("Today's date has been processed and ready for the next call")
+            print(f"{date_to_check} has been processed. And it can be processed again if needed")
             return HttpResponse(
-                "Today's date has been processed and ready for the next call"
+                f"{date_to_check} has been processed. And it can be processed again if needed"
             )
-        date_to_check += timedelta(days=1)
+
+        date_to_check = get_date_to_check(r, date_to_check)
         time.sleep(60)
 
         # Код поправлен с целью обрабатывать даты в будущем,
