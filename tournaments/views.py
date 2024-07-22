@@ -307,7 +307,7 @@ def get_goals_stats(request):
             goals_stats__isnull=True,
         )
         .select_related("main_team", "opponent")
-        .order_by("id")[:10]
+        .order_by("-id")[:10]
     )
 
     print(matches)
