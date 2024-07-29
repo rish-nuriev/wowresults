@@ -70,11 +70,7 @@ def create(request, match_day):
         content = '<div class="article_wrapper">'
         content += f'<div class="results_description">{nice_date} '
 
-        tags = [
-            tournament["tournament__title"],
-            f"матчи {nice_date}",
-            f'{tournament["tournament__title"]} {tournament["tournament__season"]} {match.tour} тур',
-        ]
+        tags = []
 
         for match in matches:
             tags.extend([match.main_team.title, match.opponent.title])
@@ -85,6 +81,12 @@ def create(request, match_day):
                 match.goals_scored,
                 match.goals_conceded,
             )
+
+        tags.extend([
+            tournament["tournament__title"],
+            f"матчи {nice_date}",
+            f'{tournament["tournament__title"]} {tournament["tournament__season"]} {match.tour} тур',
+        ])
 
         content += "</div>"
         content += (

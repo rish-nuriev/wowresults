@@ -2,7 +2,7 @@ from django.db import models
 from django.urls import reverse
 from django.utils.text import slugify
 from taggit.managers import TaggableManager
-from taggit.models import TagBase
+from taggit.models import TagBase, GenericTaggedItemBase
 
 from tournaments.models import Tournament
 
@@ -21,6 +21,13 @@ class TranslitTag(TagBase):
         slug = super().slugify(tag, i)
         return slugify(translit_to_eng(slug))
 
+class TaggedWithTranslitTag(GenericTaggedItemBase):
+    tag = models.ForeignKey(
+        TranslitTag,
+        on_delete=models.CASCADE,
+        related_name="%(app_label)s_%(class)s_items",
+    )
+
 
 class PublishedManager(models.Manager):
     def get_queryset(self):
@@ -29,7 +36,7 @@ class PublishedManager(models.Manager):
 
 class Article(models.Model):
 
-    tags = TaggableManager(through=TranslitTag)
+    tags = TaggableManager(through=TaggedWithTranslitTag)
 
     class Status(models.IntegerChoices):
         DRAFT = 0, "Черновик"
