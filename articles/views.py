@@ -70,7 +70,14 @@ def create(request, match_day):
         content = '<div class="article_wrapper">'
         content += f'<div class="results_description">{nice_date} '
 
+        tags = [
+            tournament["tournament__title"],
+            f"матчи {nice_date}",
+            f'{tournament["tournament__title"]} {tournament["tournament__season"]} {match.tour} тур',
+        ]
+
         for match in matches:
+            tags.extend([match.main_team.title, match.opponent.title])
             content += gen_match_text(
                 match.main_team,
                 match.opponent,
@@ -78,6 +85,7 @@ def create(request, match_day):
                 match.goals_scored,
                 match.goals_conceded,
             )
+
         content += "</div>"
         content += (
             "<h3>Предлагаем вашему вниманию результаты завершившихся матчей:</h3>"
@@ -93,14 +101,6 @@ def create(request, match_day):
         content += "</div>"
 
         slug = slugify(translit_to_eng(title))
-
-        tags = [
-            match.main_team.title,
-            match.opponent.title,
-            tournament["tournament__title"],
-            f"матчи {nice_date}",
-            f'{tournament["tournament__title"]} {tournament["tournament__season"]} {match.tour} тур',
-        ]
 
         defaults = {
             "title": title,
