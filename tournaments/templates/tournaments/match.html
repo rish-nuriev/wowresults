@@ -12,7 +12,7 @@
         <img src="{{ match.main_team.logo.url }}">
     {% endif %}
         {{ match.main_team }}-{{ match.opponent }}
-    {% if match.main_team.logo %}
+    {% if match.opponent.logo %}
         <img src="{{ match.opponent.logo.url }}">
     {% endif %}
 {% endblock heading %}
