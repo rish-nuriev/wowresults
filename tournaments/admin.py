@@ -47,7 +47,7 @@ class TournamentAdmin(admin.ModelAdmin):
 @admin.register(Team)
 class TeamAdmin(admin.ModelAdmin):
     form = TeamForm
-    fields = ["title", "city", "slug", "country", "id_api_football", "is_moderated"]
+    fields = ["title", "city", "slug", "country", "id_api_football", "logo", "is_moderated"]
     prepopulated_fields = {"slug": ("title", "city")}
     list_display = ("title", "city", "slug", "country", "is_moderated")
     list_filter = ["country", "is_moderated"]
