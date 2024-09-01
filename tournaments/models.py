@@ -1,9 +1,14 @@
-from email.policy import default
+import logging
 from django.urls import reverse
 from django.utils.text import slugify
 import django.utils.timezone
 from django.db import models
 
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
+
+
+logger = logging.getLogger('basic_logger')
 
 class MainMatchesManager(models.Manager):
     def get_queryset(self):
@@ -109,6 +114,7 @@ class Match(models.Model):
         CANCELLED = "CANC", "Отменен"
         PENALTY = "PEN", "Серия пенальти"
         TOBEDEFINED = "TBD", "Точная дата не известна"
+        POSTPONED = "PST", "Отложен"
 
     id_api_football = models.BigIntegerField(
         blank=True, default=0, verbose_name="ID на Api Football", db_index=True
@@ -196,6 +202,7 @@ class Match(models.Model):
     def __str__(self):
         return f"{self.main_team.title} - {self.opponent.title}"
 
+
     def get_absolute_url(self):
         return reverse(
             "match",
@@ -256,3 +263,76 @@ class Event(models.Model):
     class Meta:
         verbose_name = "Событие"
         verbose_name_plural = "События"
+
+
+class ApiFootballID(models.Model):
+    api_football_id = models.PositiveIntegerField()
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.PositiveIntegerField()
+    content_object = GenericForeignKey("content_type", "object_id")
+
+    def __str__(self):
+        return f"{self.api_football_id} - ({self.content_type}) - {self.content_object}"
+
+    class Meta:
+        unique_together = ("content_type", "object_id", "api_football_id")
+        indexes = [
+            models.Index(fields=["content_type", "object_id"]),
+        ]
+        verbose_name = "Соответствия APIFootball"
+        verbose_name_plural = "Соответствие APIFootball"
+
+    # Модели проекта не должны зависеть от модели АПИ напрямую
+    # Поэтому связываю их через GenericForeignKey
+    # И при этом нельзя использовать GenericRelation
+    # Все запросы будут идти через связывающую модель ContentType
+    # Также нужно учесть что т.к. GenericRelation не определено
+    # то в случае удаления Команды например, удаление из данной таблицы
+    # не происходит автоматически а реализовано в match_pre_delete_handler
+
+    @classmethod
+    def get_team_by_api_id(cls, team_id_from_api):
+        team_ct = ContentType.objects.get_for_model(Team)
+        api_obj = (
+            cls.objects.filter(content_type=team_ct, api_football_id=team_id_from_api)
+            .first()
+        )
+        team = None
+
+        if not api_obj:
+            warning_msg = f'get_team_by_api_id method: {api_obj} is missing for team_id_from_api-{team_id_from_api}'
+            logger.warning(warning_msg)
+        else:
+            team = api_obj.content_object
+        return team
+
+    @classmethod
+    def get_tournament_api_obj_by_tournament(cls, tournament):
+        tournament_ct = ContentType.objects.get_for_model(Tournament)
+        return (
+            cls.objects.filter(content_type=tournament_ct, object_id=tournament.id)
+            .first()
+        )
+
+    @classmethod
+    def get_match_record(cls, match_id):
+        match_ct = ContentType.objects.get_for_model(Match)
+        return cls.objects.filter(
+            content_type=match_ct, api_football_id=match_id
+        ).first()
+
+    @classmethod
+    def get_api_match_record_by_match_obj(cls, match_obj):
+        match_ct = ContentType.objects.get_for_model(Match)
+        return cls.objects.filter(
+            content_type=match_ct, object_id=match_obj.id
+        ).first()
+
+    @classmethod
+    def get_team_record(cls, team_id):
+        team_ct = ContentType.objects.get_for_model(Team)
+        return cls.objects.filter(content_type=team_ct, api_football_id=team_id).first()
+
+    @staticmethod
+    def get_tournament_api_season_by_tournament(tournament):
+        return tournament.season.split("-")[0]

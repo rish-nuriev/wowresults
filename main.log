@@ -1,0 +1,25 @@
+WARNING | 2024-08-31 21:00:14,414 | views | get_results view is running from non local machine
+ERROR | 2024-08-31 21:02:08,380 | views | get_results view is running from non local machine
+ERROR | 2024-08-31 21:07:10,462 | views | get_results view is running from non local machine
+ERROR | 2024-08-31 21:32:31,797 | views | get_results view is running from non local machine
+INFO | 2024-08-31 22:09:31,206 | views | 2024-08-31 date has been processed in get_results method
+INFO | 2024-08-31 22:09:31,206 | views | 2024-08-31 has been processed. And it can be processed again if needed
+INFO | 2024-08-31 23:00:07,563 | views | 2024-08-31 date has been processed in get_results method
+INFO | 2024-08-31 23:00:07,564 | views | 2024-08-31 has been processed. And it can be processed again if needed
+INFO | 2024-09-01 00:00:09,472 | views | 2024-08-31 date has been processed in get_results method
+INFO | 2024-09-01 00:00:09,472 | views | 2024-08-31 has been processed. And it can be processed again if needed
+INFO | 2024-09-01 10:33:55,320 | views | 2024-08-28 date has been processed in get_results method
+INFO | 2024-09-01 10:34:30,317 | views | 2024-08-29 date has been processed in get_results method
+ERROR | 2024-09-01 10:34:58,723 | apifootball | Ошибка при запросе к АПИ Футбол - Response Errors: {'rateLimit': 'Too many requests. Your rate limit is 10 requests per minute.'}
+INFO | 2024-09-01 10:35:35,523 | views | 2024-08-31 date has been processed in get_results method
+INFO | 2024-09-01 10:36:40,312 | views | 2024-09-01 date has been processed in get_results method
+INFO | 2024-09-01 10:36:40,313 | views | 2024-09-01 has been processed. And it can be processed again if needed
+INFO | 2024-09-01 14:00:08,061 | views | 2024-09-01 date has been processed in get_results method
+INFO | 2024-09-01 14:00:08,061 | views | 2024-09-01 has been processed. And it can be processed again if needed
+INFO | 2024-09-01 15:00:07,142 | views | 2024-09-01 date has been processed in get_results method
+INFO | 2024-09-01 15:00:07,143 | views | 2024-09-01 has been processed. And it can be processed again if needed
+INFO | 2024-09-01 15:11:16,467 | views | 2024-09-01 date has been processed in get_results method
+INFO | 2024-09-01 15:11:16,467 | views | 2024-09-01 has been processed. And it can be processed again if needed
+INFO | 2024-09-01 15:13:16,540 | views | 2024-08-30 date has been processed in get_results method
+INFO | 2024-09-01 15:14:21,418 | views | 2024-09-01 date has been processed in get_results method
+INFO | 2024-09-01 15:14:21,418 | views | 2024-09-01 has been processed. And it can be processed again if needed

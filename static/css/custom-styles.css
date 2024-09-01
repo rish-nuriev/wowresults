@@ -56,3 +56,7 @@ body .site-nav {
 .posts-entry .blog-entry-search-item .img-link {
     width: 200px;
 }
+
+.results-list ul li {
+    list-style: none;
+}

@@ -8,7 +8,7 @@ from tournaments.widgets import CustomDatePickerInput
 
 from .forms import TeamForm
 
-from .models import Country, Event, Stage, Team, Tournament, Match
+from .models import ApiFootballID, Country, Event, Stage, Team, Tournament, Match
 
 
 @admin.register(Country)
@@ -34,6 +34,7 @@ class TournamentAdmin(admin.ModelAdmin):
     ]
     prepopulated_fields = {"slug": ("title", "season")}
     list_display = (
+        "id",
         "title",
         "season",
         "country",
@@ -47,9 +48,17 @@ class TournamentAdmin(admin.ModelAdmin):
 @admin.register(Team)
 class TeamAdmin(admin.ModelAdmin):
     form = TeamForm
-    fields = ["title", "city", "slug", "country", "id_api_football", "logo", "is_moderated"]
+    fields = [
+        "title",
+        "city",
+        "slug",
+        "country",
+        "id_api_football",
+        "logo",
+        "is_moderated",
+    ]
     prepopulated_fields = {"slug": ("title", "city")}
-    list_display = ("title", "city", "slug", "country", "is_moderated")
+    list_display = ("id", "id_api_football", "title", "city", "slug", "country", "is_moderated")
     list_filter = ["country", "is_moderated"]
 
 
@@ -78,6 +87,8 @@ class MatchAdmin(admin.ModelAdmin):
         "video",
     ]
     list_display = (
+        "id",
+        "id_api_football",
         "tournament",
         "date",
         "tour",
@@ -106,3 +117,8 @@ class MatchAdmin(admin.ModelAdmin):
 class EventAdmin(admin.ModelAdmin):
     # fields = '__all__'
     list_display = ("title", "tournament", "team", "operation", "value", "tour")
+
+
+@admin.register(ApiFootballID)
+class ApiFootballIDAdmin(admin.ModelAdmin):
+    list_display = ("api_football_id", "content_type", "object_id", "content_object")
