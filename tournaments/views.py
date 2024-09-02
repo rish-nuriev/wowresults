@@ -419,6 +419,7 @@ def get_goals_stats(request):
         m.goals_stats = goals_stats
         m.save()
 
+    logger.info("get_goals_stats request has been completed")
     return HttpResponse("Request has been completed")
 
 # Временный метод для компирования id_api_football поля во внешнюю таблицу

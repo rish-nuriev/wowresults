@@ -81,7 +81,7 @@ class ApiFootball(ApiInterface):
                             )
                         )
                         if api_match_record:
-                            match_api_id = api_match_record
+                            match_api_id = api_match_record.api_football_id
 
                     return {
                         "fixture": match_api_id,
