@@ -8,7 +8,6 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('articles', '0002_article_tags'),
         ('contenttypes', '0002_remove_content_type_name'),
     ]
 
