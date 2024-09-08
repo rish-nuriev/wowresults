@@ -25,7 +25,7 @@ class TaggedWithTranslitTag(GenericTaggedItemBase):
     tag = models.ForeignKey(
         TranslitTag,
         on_delete=models.CASCADE,
-        related_name="%(app_label)s_%(class)s_items",
+        related_name="translittag_items",
     )
 
 
