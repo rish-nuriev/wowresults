@@ -3,6 +3,7 @@
 <h3 class="heading">Теги</h3>
         <ul class="tags">
             {% for tag in ten_tags  %}
-                <li><a href="/{{all_tags|get_item:tag}}">{{tag}}</a></li>
+                {% comment %} <li><a href="{% url "articles:articles_list_by_tag" all_tags|get_item:tag %} ">{{tag}}</a></li> {% endcomment %}
+                <li><a href="{{ tag.get_absolute_url }}">{{tag}}</a></li>
             {% endfor %}
         </ul>

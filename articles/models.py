@@ -1,3 +1,4 @@
+import random
 from django.db import models
 from django.urls import reverse
 from django.utils.text import slugify
@@ -6,12 +7,42 @@ from taggit.models import TagBase, GenericTaggedItemBase
 
 from tournaments.models import Tournament
 
+
 def translit_to_eng(s: str) -> str:
-    d = {'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd',
-         'е': 'e', 'ё': 'yo', 'ж': 'zh', 'з': 'z', 'и': 'i', 'к': 'k',
-         'л': 'l', 'м': 'm', 'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r',
-         'с': 's', 'т': 't', 'у': 'u', 'ф': 'f', 'х': 'h', 'ц': 'c', 'ч': 'ch',
-         'ш': 'sh', 'щ': 'shch', 'ь': '', 'ы': 'y', 'ъ': '', 'э': 'r', 'ю': 'yu', 'я': 'ya'}
+    d = {
+        "а": "a",
+        "б": "b",
+        "в": "v",
+        "г": "g",
+        "д": "d",
+        "е": "e",
+        "ё": "yo",
+        "ж": "zh",
+        "з": "z",
+        "и": "i",
+        "к": "k",
+        "л": "l",
+        "м": "m",
+        "н": "n",
+        "о": "o",
+        "п": "p",
+        "р": "r",
+        "с": "s",
+        "т": "t",
+        "у": "u",
+        "ф": "f",
+        "х": "h",
+        "ц": "c",
+        "ч": "ch",
+        "ш": "sh",
+        "щ": "shch",
+        "ь": "",
+        "ы": "y",
+        "ъ": "",
+        "э": "r",
+        "ю": "yu",
+        "я": "ya",
+    }
 
     return "".join(map(lambda x: d[x] if d.get(x, False) else x, s.lower()))
 
@@ -20,6 +51,22 @@ class TranslitTag(TagBase):
     def slugify(self, tag, i=None):
         slug = super().slugify(tag, i)
         return slugify(translit_to_eng(slug))
+
+    def get_absolute_url(self):
+        return reverse("articles:articles_list_by_tag", kwargs={"tag_slug": self.slug})
+
+    @classmethod
+    def get_random_tags(cls, tags_number=5):
+        # Джанго позволяет получить случайные записи
+        # вот так - cls.objects.order_by("?")[:tags_number]
+        # но в случае увеличения кол-ва тегов в БД
+        # нагрузка на БД будет возрастать
+        # поэтому лучше использовать random
+        all_tags = list(cls.objects.all())
+        random.shuffle(all_tags)
+
+        return all_tags[:tags_number]
+
 
 class TaggedWithTranslitTag(GenericTaggedItemBase):
     tag = models.ForeignKey(
@@ -81,4 +128,4 @@ class Article(models.Model):
         indexes = [models.Index(fields=["-time_create"])]
 
     def get_absolute_url(self):
-        return reverse("article", kwargs={"article_slug": self.slug})
+        return reverse("articles:article", kwargs={"article_slug": self.slug})

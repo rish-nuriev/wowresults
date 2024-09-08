@@ -54,7 +54,7 @@ class Tournament(models.Model):
         return reverse("tournament", kwargs={"t_slug": self.slug})
 
     def get_articles_url(self):
-        return reverse("articles_by_tournament", kwargs={"t_slug": self.slug})
+        return reverse("articles:articles_by_tournament", kwargs={"t_slug": self.slug})
 
 
 class Country(models.Model):

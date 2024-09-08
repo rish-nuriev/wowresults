@@ -6,7 +6,7 @@ from django.utils import dateformat
 from django.utils.text import slugify
 from django.views.generic import DetailView, ListView
 from articles.helpers import gen_match_text
-from articles.models import Article
+from articles.models import Article, TranslitTag
 
 from tournaments.models import Match
 
@@ -136,7 +136,15 @@ class ArticleListView(ListView):
     Представление списка постов
     """
 
-    queryset = Article.published.select_related("tournament").all()
+    # По умолчанию берем все статьи
+    # Но если передан тег, то фильтруем по тегам
+    def get_queryset(self):
+        queryset = Article.published.select_related("tournament")
+        if self.kwargs.get("tag_slug"):
+            tag = get_object_or_404(TranslitTag, slug=self.kwargs["tag_slug"])
+            queryset = queryset.filter(tags__in=[tag])
+        return queryset
+
     context_object_name = "posts"
     paginate_by = 5
     template_name = "articles/list.html"
