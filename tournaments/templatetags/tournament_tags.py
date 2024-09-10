@@ -13,7 +13,7 @@ def show_tournaments(selected=0):
     year = datetime.today().year - 2
     tournaments = Tournament.objects.annotate(total=Count("posts")).filter(
         total__gt=0, season_api_football__gt=year
-    )
+    ).order_by('-total')
     return {"tournaments": tournaments, "selected": selected}
 
 
