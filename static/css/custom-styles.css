@@ -60,3 +60,13 @@ body .site-nav {
 .results-list ul li {
     list-style: none;
 }
+
+.container.article h3{
+    font-size: 15px;
+    margin: 20px;
+}
+
+.container.article p{
+    font-size: 12px;
+    margin: 10px;
+}

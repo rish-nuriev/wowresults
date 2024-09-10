@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 
 {% load static %}
+{% load article_tags %}
 
 {% load custom_filters %}
 
@@ -17,13 +18,24 @@
 <div class="container article">
 
     {% autoescape off %}
-        {{ article.content }}
+        <div style="font-size: 20px;">{{ article.content }}</div>
         {% if article.additional_content %}
             {{ article.additional_content }}
         {% endif %}
     {% endautoescape %}
 
-    <p class="tags">Теги: {{ article.tags.all|join:", " }}</p>
+    <span class="tags">Теги: </span>
+
+    {% for tag in article.tags.all %}
+    <a href="{{ tag.get_absolute_url }}">
+        <span class="label label-success">{{ tag }}</span>{% if not forloop.last %}, {% endif %}
+    </a>
+    {% endfor %}
+
+
+    </br></br>
+
+    {% show_similar_articles article %}
 
 </div>
 

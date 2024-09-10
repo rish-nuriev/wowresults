@@ -1,0 +1,12 @@
+<ul class="list-group">
+    <li class="list-group-item">
+        <strong>Похожие статьи</strong>
+    </li>
+
+    {% for item in similar_articles %}
+    <a href="{{ item.get_absolute_url }}" class="list-group-item list-group-item-action">
+        {{ item.title }}
+    </a>
+    {% endfor %}
+</ul>
+<br />
