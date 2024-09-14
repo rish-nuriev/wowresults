@@ -24,7 +24,7 @@ register = template.Library()
 
 
 @register.inclusion_tag("tournaments/table.html")
-def show_table(tournament, tour=0):
+def show_table(tournament, tour=0, date=None):
     q = (
         Match.objects.select_related("Tournament")
         .values("main_team__title")
@@ -33,6 +33,8 @@ def show_table(tournament, tour=0):
     # tournament = Tournament.objects.prefetch_related('events').get(slug=t_slug)
     if tour:
         q = q.filter(tour__lte=tour)
+    if date:
+        q = q.filter(date__lte=date)
     matches = (
         q.annotate(
             results=Concat("result", delimiter=""),

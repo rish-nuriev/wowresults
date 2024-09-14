@@ -4,6 +4,7 @@
 {% load article_tags %}
 
 {% load custom_filters %}
+{% load table %}
 
 {% block title %} {{ article.title }} {% endblock title %}
 
@@ -31,6 +32,16 @@
         <span class="label label-success">{{ tag }}</span>{% if not forloop.last %}, {% endif %}
     </a>
     {% endfor %}
+
+    {% if article.match_day %}
+    
+        </br>
+        </br>
+        <h6 style="text-align: center; margin: 0 auto; width: 50%;">Положение команд на {{article.match_day}}</h6>
+        </br>
+        {% show_table article.tournament date=article.match_day %}
+
+    {% endif %}
 
 
     </br></br>
