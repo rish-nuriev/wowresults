@@ -8,7 +8,8 @@ register_converter(DateConverter, 'date')
 
 urlpatterns = [
     path('get_results/', views.get_results, name='getres'),
-    path('get_results/<date:start_date>', views.get_results, name='getres'),
+    path('get_results/<date:start_date>', views.get_results, name='getres_with_date'),
+    path('get_results/<date:start_date>/<int:single_day>/', views.get_results, name='getres_single_day'),
     path('get_teams/', views.get_teams, name='getteams'),
     path('update_teams/', views.update_teams, name='updateteams'),
     path('update_tours/', views.update_tours, name='updateteams'),

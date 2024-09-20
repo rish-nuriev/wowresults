@@ -94,7 +94,7 @@ def page_not_found(request, exception):
 # @permission_classes((IsAuthenticated, ))
 # @authentication_classes((JWTAuthentication, ))
 # @api_view(['GET'])
-def get_results(request, start_date=""):
+def get_results(request, start_date="", single_day=0):
     """
     Метод запрашивает результаты матчей через главное АПИ (main_api)
     Пока это ApiFootball. Далее метод записывает результаты в базу данных.
@@ -256,6 +256,11 @@ def get_results(request, start_date=""):
 
         info_message = f'{date_to_check} date has been processed in get_results method'
         logger.info(info_message)
+
+        if single_day:
+            info_message = f"{date_to_check} has been processed separately."
+            logger.info(info_message)
+            return HttpResponse(info_message)
 
         # запросы к текущей и будущей дате могут выполняться многократно, поэтому не маркируем
         if date_to_check < today:
