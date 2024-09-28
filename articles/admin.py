@@ -5,7 +5,7 @@ from .models import Article
 
 @admin.register(Article)
 class ArticleAdmin(admin.ModelAdmin):
-    fields = ["title", "slug", "additional_content","is_published","tags"]
+    fields = ["title", "slug", "content", "additional_content","is_published","tags"]
     prepopulated_fields = {"slug": ("title",)}
 
     list_display = (
@@ -17,6 +17,7 @@ class ArticleAdmin(admin.ModelAdmin):
         "tag_list",
     )
     list_editable = ("is_published",)
+    readonly_fields = ('content',)
 
     def get_queryset(self, request):
         return super().get_queryset(request).prefetch_related("tags")

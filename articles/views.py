@@ -62,7 +62,9 @@ def create(request, match_day):
 
     for tournament in tournaments_to_process:
         matches = Match.main_matches.filter(
-            tournament=tournament["tournament__id"], date__contains=match_day
+            tournament=tournament["tournament__id"],
+            status=Match.Statuses.FULL_TIME,
+            date__contains=match_day,
         )
         nice_date = dateformat.format(match_day, settings.DATE_FORMAT)
         title = f'Результаты матчей: {tournament["tournament__title"]} {tournament["tournament__season"]} - {nice_date}'
@@ -82,11 +84,13 @@ def create(request, match_day):
                 match.goals_conceded,
             )
 
-        tags.extend([
-            tournament["tournament__title"],
-            f"матчи {nice_date}",
-            f'{tournament["tournament__title"]} {tournament["tournament__season"]} {match.tour} тур',
-        ])
+        tags.extend(
+            [
+                tournament["tournament__title"],
+                f"матчи {nice_date}",
+                f'{tournament["tournament__title"]} {tournament["tournament__season"]} {match.tour} тур',
+            ]
+        )
 
         content += "</div>"
         content += (
