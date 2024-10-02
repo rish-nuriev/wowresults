@@ -44,7 +44,7 @@ class Migration(migrations.Migration):
                 ('title', models.CharField(db_index=True, max_length=255, verbose_name='Название')),
                 ('slug', models.SlugField(max_length=255, unique=True)),
                 ('city', models.CharField(max_length=255, verbose_name='Город')),
-                ('api_football_id', models.BigIntegerField(db_index=True, default=0, verbose_name='ID на API Football')),
+                ('api_football_id', models.BigIntegerField(db_index=True, default=0, null=True, verbose_name='ID на API Football')),
                 ('is_moderated', models.BooleanField(default=True, verbose_name='Проверка пройдена')),
                 ('logo', models.ImageField(null=True, upload_to='images/teams/')),
                 ('country', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='teams', to='tournaments.country', verbose_name='Страна')),
@@ -83,7 +83,7 @@ class Migration(migrations.Migration):
             name='Match',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('id_api_football', models.BigIntegerField(blank=True, db_index=True, default=0, verbose_name='ID на Api Football')),
+                ('id_api_football', models.BigIntegerField(blank=True, db_index=True, default=0, null=True, verbose_name='ID на Api Football')),
                 ('group', models.CharField(blank=True, max_length=2, null=True, verbose_name='Группа')),
                 ('tour', models.IntegerField(blank=True, default=0, null=True, verbose_name='Тур')),
                 ('date', models.DateTimeField(default=django.utils.timezone.now, verbose_name='Дата и время')),
