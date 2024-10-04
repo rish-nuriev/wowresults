@@ -102,7 +102,7 @@ class Migration(migrations.Migration):
             name='ApiFootballID',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('api_football_id', models.PositiveIntegerField()),
+                ('api_football_id', models.PositiveIntegerField(null=True)),
                 ('object_id', models.PositiveIntegerField()),
                 ('content_type', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='contenttypes.contenttype')),
             ],
