@@ -263,7 +263,7 @@ class Event(models.Model):
 
 
 class ApiFootballID(models.Model):
-    api_football_id = models.PositiveIntegerField()
+    api_football_id = models.PositiveIntegerField(null=True)
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey("content_type", "object_id")
