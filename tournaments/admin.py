@@ -83,12 +83,10 @@ class MatchAdmin(admin.ModelAdmin):
         "status",
         "is_moderated",
         "score",
-        "id_api_football",
         "video",
     ]
     list_display = (
         "id",
-        "id_api_football",
         "tournament",
         "date",
         "tour",
@@ -100,7 +98,6 @@ class MatchAdmin(admin.ModelAdmin):
         "group",
         "status",
         "is_moderated",
-        "id_api_football",
     )
 
     list_filter = ["tournament", "stage", "status"]

@@ -72,7 +72,7 @@ class ApiFootball(ApiInterface):
                     }
                 case "get_goals_stats":
                     m = kwargs["match_obj"]
-                    match_api_id = m.id_api_football # здесь используется легаси хранение id_api_football
+                    match_api_id = 0
                     if not match_api_id:
                         main_api_model = kwargs["main_api_model"]
                         api_match_record = (

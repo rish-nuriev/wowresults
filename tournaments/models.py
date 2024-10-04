@@ -116,9 +116,6 @@ class Match(models.Model):
         TOBEDEFINED = "TBD", "Точная дата не известна"
         POSTPONED = "PST", "Отложен"
 
-    id_api_football = models.BigIntegerField(
-        blank=True, default=0, verbose_name="ID на Api Football", db_index=True
-    )
     tournament = models.ForeignKey(
         Tournament,
         on_delete=models.PROTECT,

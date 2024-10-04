@@ -82,7 +82,6 @@ def match_post_save_handler(sender, instance, created, **kwargs):
             "goals_conceded": instance.goals_scored,
             "goals_scored": instance.goals_conceded,
             "opposite_match": instance.pk,
-            "id_api_football": 0,
         }
 
         if created:
