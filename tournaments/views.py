@@ -305,8 +305,6 @@ def get_teams(request):
 
     tournaments = t_models.Tournament.objects.filter(current=True)
 
-    # print(tournaments)
-
     for t in tournaments:
 
         tournament_api_id = main_api_model.get_tournament_api_id_by_tournament(t)
