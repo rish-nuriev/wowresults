@@ -112,7 +112,6 @@ class MatchAdmin(admin.ModelAdmin):
 
 @admin.register(Event)
 class EventAdmin(admin.ModelAdmin):
-    # fields = '__all__'
     list_display = ("title", "tournament", "team", "operation", "value", "tour")
 
 
