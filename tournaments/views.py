@@ -131,7 +131,6 @@ def get_results(request, start_date="", single_day=0):
         "score",
     )
 
-    # while date_to_check <= today:
     while True:
 
         if api_requests_count >= MAX_REQUESTS_COUNT:
