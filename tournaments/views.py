@@ -251,7 +251,9 @@ def get_results(request, start_date="", single_day=0):
                     m.score = match_data["score"]
                     m.api_match_id = match_data["match_id"]
                     m.save()
-
+                    # TODO Здесь добавляется несуществующее поле api_match_id
+                    # оно используется потом в post_save handler
+                    # но нужно найти иной способ решения данной задачи
                     # m.save(api_match_id=match_data["match_id"])
 
         info_message = f'{date_to_check} date has been processed in get_results method'
