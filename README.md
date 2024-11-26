@@ -1,4 +1,4 @@
-### Wowresults - Django project about football results
+### Wowresults - Django проект о футбольных результатах
 
 *Проект написан на Django 5.0.1*
 
