@@ -378,8 +378,6 @@ def get_goals_stats(request):
         .order_by("-id")[:10]
     )
 
-    print(matches)
-
     api_requests_count = helpers.get_api_requests_count(r)
 
     if api_requests_count >= MAX_REQUESTS_COUNT:
@@ -411,7 +409,7 @@ def get_goals_stats(request):
     logger.info("get_goals_stats request has been completed")
     return HttpResponse("Request has been completed")
 
-# Временный метод для компирования id_api_football поля во внешнюю таблицу
+# Временный метод для копирования id_api_football поля во внешнюю таблицу
 def update_teams(request):
     api_class = main_api_model.__class__
     # team_ct = ContentType.objects.get_for_model(Team)
@@ -425,7 +423,7 @@ def update_teams(request):
 
     return HttpResponse("Request has been completed")
 
-# Временный метод для компирования league_api_football поля во внешнюю таблицу
+# Временный метод для копирования league_api_football поля во внешнюю таблицу
 def update_tours(request):
     api_class = main_api_model.__class__
     # team_ct = ContentType.objects.get_for_model(Team)
