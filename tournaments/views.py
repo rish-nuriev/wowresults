@@ -32,17 +32,14 @@ from . import helpers
 logger = logging.getLogger('basic_logger')
 
 
-if settings.LOCAL_MACHINE:
-    # Подключаюсь к редис а также АПИ только с локальной машины
-    # соединить с redis
-    r = redis.Redis(
-        host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=settings.REDIS_DB
-    )
-    main_api = getattr(api_source, settings.MAIN_API)()
-    main_api_model = getattr(t_models, settings.MAIN_API_MODEL)()
-    api_parsers_container = ApiParsersContainer(main_api)
-    api_parser = api_parsers_container.get_api_parser()
-    MAX_REQUESTS_COUNT = main_api.get_max_requests_count()
+r = redis.Redis(
+    host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=settings.REDIS_DB
+)
+main_api = getattr(api_source, settings.MAIN_API)()
+main_api_model = getattr(t_models, settings.MAIN_API_MODEL)()
+api_parsers_container = ApiParsersContainer(main_api)
+api_parser = api_parsers_container.get_api_parser()
+MAX_REQUESTS_COUNT = main_api.get_max_requests_count()
 
 
 class MatchesByTournament(ListView):
@@ -107,10 +104,6 @@ def get_results(request, start_date="", single_day=0):
     И так как сезон вида "2023-2024" то из переданной даты берется год и проверяется - попадает ли в годы сезона.
     Текущая дата в данном случае не обрабатывается.
     """
-
-    if not settings.LOCAL_MACHINE:
-        logger.warning("get_results view is running from non local machine")
-        return HttpResponse("This is for local machine only")
 
     endpoint = main_api.get_endpoint("results_by_tournament")
 
@@ -293,10 +286,6 @@ def get_teams(request):
     Автоматически связать команды не получится (название команды может быть записано по-другому)
     """
 
-    if not settings.LOCAL_MACHINE:
-        logger.warning("get_teams view is running from non local machine")
-        return HttpResponse("This is for local machine only")
-
     api_requests_count = helpers.get_api_requests_count(r)
     if api_requests_count >= MAX_REQUESTS_COUNT:
         logger.error("we have reached the limit of the requests")
@@ -377,10 +366,6 @@ def get_teams(request):
 # @require_POST
 # @permission_required(["tournaments.change_match"])
 def get_goals_stats(request):
-
-    if not settings.LOCAL_MACHINE:
-        logger.warning("get_goals_stats view is running from non local machine")
-        return HttpResponse("This is for local machine only")
 
     endpoint = main_api.get_endpoint("get_goals_stats")
 
