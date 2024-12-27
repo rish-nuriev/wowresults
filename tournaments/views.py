@@ -4,23 +4,20 @@ import time
 import logging
 import requests
 import redis
+
 from django.core import files
-
-# from django.contrib.auth.decorators import permission_required, login_required
-# from django.views.decorators.http import require_POST
-# from rest_framework_simplejwt.authentication import JWTAuthentication
-
-# from rest_framework.permissions import IsAuthenticated
-# from rest_framework.decorators import (
-#     authentication_classes,
-#     permission_classes,
-#     api_view,
-# )
-
 from django.http import HttpResponse, HttpResponseNotFound, Http404
 from django.shortcuts import get_object_or_404
 from django.views.generic import DetailView, ListView
 from django.conf import settings
+
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import (
+    authentication_classes,
+    permission_classes,
+    api_view,
+)
 
 from tournaments.api_list.api_parser import ApiParserError, ApiParsersContainer
 
@@ -29,7 +26,7 @@ import tournaments.api_list.apifootball as api_source
 
 from . import helpers
 
-logger = logging.getLogger('basic_logger')
+logger = logging.getLogger("basic_logger")
 
 
 r = redis.Redis(
@@ -87,10 +84,9 @@ def page_not_found(request, exception):
     return HttpResponseNotFound("<h1>Страница не найдена</h1>")
 
 
-# @permission_required(["tournaments.add_match", "tournaments.change_match"])
-# @permission_classes((IsAuthenticated, ))
-# @authentication_classes((JWTAuthentication, ))
-# @api_view(['GET'])
+@permission_classes((IsAuthenticated,))
+@authentication_classes((JWTAuthentication,))
+@api_view(["GET"])
 def get_results(request, start_date="", single_day=0):
     """
     Метод запрашивает результаты матчей через главное АПИ (main_api)
@@ -248,7 +244,7 @@ def get_results(request, start_date="", single_day=0):
                     # но нужно найти иной способ решения данной задачи
                     # m.save(api_match_id=match_data["match_id"])
 
-        info_message = f'{date_to_check} date has been processed in get_results method'
+        info_message = f"{date_to_check} date has been processed in get_results method"
         logger.info(info_message)
 
         if single_day:
@@ -363,8 +359,9 @@ def get_teams(request):
     return HttpResponse("Request completed")
 
 
-# @require_POST
-# @permission_required(["tournaments.change_match"])
+@permission_classes((IsAuthenticated,))
+@authentication_classes((JWTAuthentication,))
+@api_view(["GET"])
 def get_goals_stats(request):
 
     endpoint = main_api.get_endpoint("get_goals_stats")
@@ -387,9 +384,7 @@ def get_goals_stats(request):
     for m in matches:
 
         payload = main_api.get_payload(
-            task="get_goals_stats",
-            match_obj=m,
-            main_api_model=main_api_model
+            task="get_goals_stats", match_obj=m, main_api_model=main_api_model
         )
 
         response = main_api.send_request(endpoint, payload)
@@ -409,6 +404,7 @@ def get_goals_stats(request):
     logger.info("get_goals_stats request has been completed")
     return HttpResponse("Request has been completed")
 
+
 # Временный метод для копирования id_api_football поля во внешнюю таблицу
 def update_teams(request):
     api_class = main_api_model.__class__
@@ -422,6 +418,7 @@ def update_teams(request):
         api_obj.save()
 
     return HttpResponse("Request has been completed")
+
 
 # Временный метод для копирования league_api_football поля во внешнюю таблицу
 def update_tours(request):
