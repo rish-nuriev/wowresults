@@ -11,7 +11,7 @@ class ApiInterface:
     def send_request(self, endpoint: str, payload: dict):
         raise NotImplementedError("The API should have send_request method")
 
-    def get_endpoint(self, task: str):
+    def get_endpoint(self, task: str) -> str:
         raise NotImplementedError("The API should have get_endpoint method")
 
     def get_payload(self, *args, **kwargs) -> dict:

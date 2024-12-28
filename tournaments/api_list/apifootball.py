@@ -4,12 +4,21 @@ from django.conf import settings
 import requests
 from tournaments.api_list.api_interface import ApiInterface
 
-logger = logging.getLogger('basic_logger')
+logger = logging.getLogger("basic_logger")
+
 
 class ApiFootballException(Exception):
     pass
 
+
 class ApiFootball(ApiInterface):
+    """
+    Класс для работы с АПИ от api-football.com.
+    Бесплатная версия позволяет посылать лишь 100 запросов в сутки.
+    Поэтому значение MAX_REQUESTS_COUNT=100.
+    В соответствии с интерфейсом ApiInterface, класс реализует 4 метода:
+    get_max_requests_count, get_endpoint, get_payload, send_request
+    """
 
     API_URL = f"https://{settings.APIFOOTBALL_HOST}/"
     MAX_REQUESTS_COUNT = 100
@@ -22,7 +31,13 @@ class ApiFootball(ApiInterface):
         }
 
     def send_request(self, endpoint: str, payload: dict):
-
+        """
+        Отправка запроса к АПИ.
+        Цель получить ответ в JSON формате.
+        В дальнейшем специальный класс ApiFootballParser
+        должен обработать запрос и получить необходимые данные.
+        Возникшие ошибки логируются (админу отправляется Email-сообщение)
+        """
         url = self.API_URL + endpoint
 
         response = {}
@@ -46,7 +61,7 @@ class ApiFootball(ApiInterface):
 
         return response
 
-    def get_endpoint(self, task):
+    def get_endpoint(self, task: str) -> str:
         match task:
             case "results_by_tournament":
                 return "fixtures"
@@ -56,7 +71,7 @@ class ApiFootball(ApiInterface):
                 return "fixtures/events"
         return "fixtures"
 
-    def get_max_requests_count(self):
+    def get_max_requests_count(self) -> int:
         return self.MAX_REQUESTS_COUNT
 
     def get_payload(self, *args, **kwargs) -> dict:
