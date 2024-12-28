@@ -271,8 +271,9 @@ def get_results(request, start_date="", single_day=0):
     return HttpResponse("All requests have been completed")
 
 
-# @require_POST
-# @permission_required(["tournaments.add_team", "tournaments.change_team"])
+@permission_classes((IsAuthenticated,))
+@authentication_classes((JWTAuthentication,))
+@api_view(["GET"])
 def get_teams(request):
     """
     Данный метод создает новые команды а также может обновить данные
@@ -402,34 +403,4 @@ def get_goals_stats(request):
         m.save()
 
     logger.info("get_goals_stats request has been completed")
-    return HttpResponse("Request has been completed")
-
-
-# Временный метод для копирования id_api_football поля во внешнюю таблицу
-def update_teams(request):
-    api_class = main_api_model.__class__
-    # team_ct = ContentType.objects.get_for_model(Team)
-    teams = t_models.Team.objects.all()
-
-    for team in teams:
-        api_obj = api_class()
-        api_obj.api_football_id = team.id_api_football
-        api_obj.content_object = team
-        api_obj.save()
-
-    return HttpResponse("Request has been completed")
-
-
-# Временный метод для копирования league_api_football поля во внешнюю таблицу
-def update_tours(request):
-    api_class = main_api_model.__class__
-    # team_ct = ContentType.objects.get_for_model(Team)
-    tours = t_models.Tournament.objects.filter(current=True)
-
-    for t in tours:
-        api_obj = api_class()
-        api_obj.api_football_id = t.league_api_football
-        api_obj.content_object = t
-        api_obj.save()
-
     return HttpResponse("Request has been completed")
