@@ -1,8 +1,12 @@
 class ApiInterface:
-    """ We might be using different sources of football results.
-        Each new implementation should realize this Interface
-        Also specific Model should be created to create associations with the database
-        Currenlty we have ApiFootballID model
+    """ 
+        Проект потенциально может использовать разные АПИ.
+        На данный момент используется api-football.com.
+        В случае использования другого АПИ нужен соответствующий класс.
+        Этот класс должен реализовывать данный интерфейс.
+        Кроме этого у другого АПИ будут свои ID сущностей.
+        Поэтому также требуется создание соответствующей модели.
+        На данный момент это ApiFootballID.
     """
     def send_request(self, endpoint: str, payload: dict):
         raise NotImplementedError("The API should have send_request method")

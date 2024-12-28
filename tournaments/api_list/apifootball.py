@@ -6,6 +6,9 @@ from tournaments.api_list.api_interface import ApiInterface
 
 logger = logging.getLogger('basic_logger')
 
+class ApiFootballException(Exception):
+    pass
+
 class ApiFootball(ApiInterface):
 
     API_URL = f"https://{settings.APIFOOTBALL_HOST}/"
@@ -28,7 +31,7 @@ class ApiFootball(ApiInterface):
             response = requests.request(
                 "GET", url, headers=self.headers, params=payload, timeout=10
             ).json()
-        except Exception as err:
+        except ApiFootballException as err:
             error_message = f"ОШИБКА: {err}"
             response["errors"] = error_message
 
