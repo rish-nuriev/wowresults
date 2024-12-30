@@ -87,25 +87,26 @@ def page_not_found(request, exception):
 @permission_classes((IsAuthenticated,))
 @authentication_classes((JWTAuthentication,))
 @api_view(["GET"])
-def get_results(request, start_date="", single_day=0):
+def get_results(request, process_date="", current=True):
     """
-    Метод запрашивает результаты матчей через главное АПИ (main_api)
-    Пока это ApiFootball. Далее метод записывает результаты в базу данных.
+    Метод запрашивает результаты матчей через АПИ. 
+    И далее записывает результаты в базу данных.
     По умолчанию выбирается текущая дата и обновляются результаты текущих турниров.
-    То есть турниры по умолчанию фльтруются по полю current=True.
-    Если же передана дата то она считается стартовой и проверяется через хранилище Redis.
-    Если дата уже была обработана, то берется следующий день и опять проверяется в Redis.
-    И так до тех пор пока не найдена необработанная дата либо дата не станет текущей.
-    Турнир в таком случае выбирается по принципу сезона.
-    И так как сезон вида "2023-2024" то из переданной даты берется год и проверяется - попадает ли в годы сезона.
-    Текущая дата в данном случае не обрабатывается.
+    То есть турниры по умолчанию фильтруются по полю current=True.
+    Если же передана дата то будут обрабатываться матчи именно на ту дату.
+    Если параметр current приходит как False, 
+    то уже будут обрабатываться недействующие турниры.
+    Сезон будет выбран на основании даты.
+    Берется год и проверяется - попадает ли в годы сезона.
+    Пока у нас все турниры - это регулярные чемпионаты.
+    Но возможно позже будут добавлены кубки, чемпионаты мира и т.п.
     """
 
     endpoint = main_api.get_endpoint("results_by_tournament")
 
     today = datetime.now(timezone.utc).date()
 
-    date_to_check = helpers.get_date_to_check(r, start_date) if start_date else today
+    date_to_check = process_date or today
     api_requests_count = helpers.get_api_requests_count(r)
 
     match_options = (
@@ -120,155 +121,121 @@ def get_results(request, start_date="", single_day=0):
         "score",
     )
 
-    while True:
 
-        if api_requests_count >= MAX_REQUESTS_COUNT:
-            logger.error("We have reached the limit of API requests")
-            return HttpResponse("we have reached the limit of the requests")
+    if api_requests_count >= MAX_REQUESTS_COUNT:
+        logger.error("We have reached the limit of API requests")
+        return HttpResponse("we have reached the limit of the requests")
 
-        if start_date:
-            tournaments = t_models.Tournament.objects.filter(
-                current=True, is_regular=True, season__contains=date_to_check.year
-            )
-            print(tournaments)
-        else:
-            tournaments = t_models.Tournament.objects.filter(current=True)
+    tournaments = t_models.Tournament.objects.filter(
+        current=current, is_regular=True, season__contains=date_to_check.year
+    )
 
-        for t in tournaments:
+    for t in tournaments:
 
-            # Пока у нас все турниры - это регулярные чемпионаты
-            # Но возможно позже будут добавлены кубки, чемпионаты мира и т.п.
-            if not t.is_regular:
-                continue
+        date = date_to_check.strftime(main_api.DATE_FORMAT)
 
-            date = date_to_check.strftime(main_api.DATE_FORMAT)
+        tournament_api_obj = main_api_model.get_tournament_api_obj_by_tournament(t)
 
-            tournament_api_obj = main_api_model.get_tournament_api_obj_by_tournament(t)
+        if not tournament_api_obj:
+            continue
 
-            if not tournament_api_obj:
-                continue
+        tournament_api_id = tournament_api_obj.api_football_id
+        tournament_api_season = (
+            main_api_model.get_tournament_api_season_by_tournament(t)
+        )
 
-            tournament_api_id = tournament_api_obj.api_football_id
-            tournament_api_season = (
-                main_api_model.get_tournament_api_season_by_tournament(t)
-            )
+        payload = main_api.get_payload(
+            task="results_by_tournament",
+            tournament_api_id=tournament_api_id,
+            tournament_api_season=tournament_api_season,
+            date=date,
+        )
 
-            payload = main_api.get_payload(
-                task="results_by_tournament",
-                tournament_api_id=tournament_api_id,
-                tournament_api_season=tournament_api_season,
-                date=date,
+        response = main_api.send_request(endpoint, payload)
+
+        if response["errors"]:
+            return HttpResponse(
+                "Response Errors: please check the logs for details"
             )
 
-            response = main_api.send_request(endpoint, payload)
+        helpers.increase_api_requests_count(r)
 
-            if response["errors"]:
-                return HttpResponse(
-                    "Response Errors: please check the logs for details"
-                )
+        matches = api_parser.parse_matches(response)
 
-            helpers.increase_api_requests_count(r)
-            api_requests_count += 1
+        for match in matches:
 
-            matches = api_parser.parse_matches(response)
+            match_data = {}
 
-            # matches = response["response"]
-            for match in matches:
-
-                match_data = {}
-
-                for option in match_options:
-                    try:
-                        match_data[option] = getattr(api_parser, "get_" + option)(match)
-                    except AttributeError:
-                        message = f"get_{option} method should be realized in {api_parser.__class__.__name__}"
-                        logger.error(message)
-                        continue
-                    except ApiParserError:
-                        continue
-
-                team1 = main_api_model.get_team_by_api_id(match_data["main_team_id"])
-                team2 = main_api_model.get_team_by_api_id(match_data["opponent_id"])
-
-                if not team1 or not team2:
-                    # todo We need to add this team into DB using specific API request
-                    # but not at the same time, the task needs to be added to the queue
+            for option in match_options:
+                try:
+                    match_data[option] = getattr(api_parser, "get_" + option)(match)
+                except AttributeError:
+                    message = f"get_{option} method should be realized in {api_parser.__class__.__name__}"
+                    logger.error(message)
+                    continue
+                except ApiParserError:
                     continue
 
-                # поле is_moderated задумывалось как требование ручной корректировки данных
-                # в админке т.к. если матч заканчивался по пенальти не было данных из АПИ
-                # Решение - купить платный сервис АПИ
-                # Пока используем только регулярные чемпионаты поэтому
-                # is_moderated можно выставить в True
-                is_moderated = True
+            team1 = main_api_model.get_team_by_api_id(match_data["main_team_id"])
+            team2 = main_api_model.get_team_by_api_id(match_data["opponent_id"])
 
-                api_match_record = main_api_model.get_match_record(
-                    match_data["match_id"]
-                )
+            if not team1 or not team2:
+                # todo We need to add this team into DB using specific API request
+                # but not at the same time, the task needs to be added to the queue
+                continue
 
-                if api_match_record:
-                    match_record = api_match_record.content_object
+            # поле is_moderated задумывалось как требование ручной корректировки данных
+            # в админке т.к. если матч заканчивался по пенальти не было данных из АПИ
+            # Решение - купить платный сервис АПИ
+            # Пока используем только регулярные чемпионаты поэтому
+            # is_moderated можно выставить в True
+            is_moderated = True
 
-                    data_for_update = {
-                        "date": match_data["match_date"],
-                        "status": match_data["status"],
-                        "goals_scored": match_data["goals_scored"],
-                        "goals_conceded": match_data["goals_conceded"],
-                        "is_moderated": is_moderated,
-                        "result": match_record.result,
-                        "points_received": match_record.points_received,
-                    }
+            api_match_record = main_api_model.get_match_record(
+                match_data["match_id"]
+            )
 
-                    for field, value in data_for_update.items():
-                        setattr(match_record, field, value)
+            if api_match_record:
+                match_record = api_match_record.content_object
 
-                    match_record.save()
-                else:
-                    m = t_models.Match()
+                data_for_update = {
+                    "date": match_data["match_date"],
+                    "status": match_data["status"],
+                    "goals_scored": match_data["goals_scored"],
+                    "goals_conceded": match_data["goals_conceded"],
+                    "is_moderated": is_moderated,
+                    "result": match_record.result,
+                    "points_received": match_record.points_received,
+                }
 
-                    m.date = match_data["match_date"]
-                    m.main_team = team1
-                    m.opponent = team2
-                    m.status = match_data["status"]
-                    m.goals_scored = match_data["goals_scored"]
-                    m.goals_conceded = match_data["goals_conceded"]
-                    m.tournament = t
-                    m.tour = match_data["tour"]
-                    m.stage = None
-                    m.is_moderated = is_moderated
-                    m.score = match_data["score"]
-                    m.api_match_id = match_data["match_id"]
-                    m.save()
-                    # TODO Здесь добавляется несуществующее поле api_match_id
-                    # оно используется потом в post_save handler
-                    # но нужно найти иной способ решения данной задачи
-                    # m.save(api_match_id=match_data["match_id"])
+                for field, value in data_for_update.items():
+                    setattr(match_record, field, value)
 
-        info_message = f"{date_to_check} date has been processed in get_results method"
-        logger.info(info_message)
+                match_record.save()
+            else:
+                m = t_models.Match()
 
-        if single_day:
-            info_message = f"{date_to_check} has been processed separately."
-            logger.info(info_message)
-            return HttpResponse(info_message)
+                m.date = match_data["match_date"]
+                m.main_team = team1
+                m.opponent = team2
+                m.status = match_data["status"]
+                m.goals_scored = match_data["goals_scored"]
+                m.goals_conceded = match_data["goals_conceded"]
+                m.tournament = t
+                m.tour = match_data["tour"]
+                m.stage = None
+                m.is_moderated = is_moderated
+                m.score = match_data["score"]
+                m.api_match_id = match_data["match_id"]
+                m.save()
+                # TODO Здесь добавляется несуществующее поле api_match_id
+                # оно используется потом в post_save handler
+                # но нужно найти иной способ решения данной задачи
+                # m.save(api_match_id=match_data["match_id"])
 
-        # запросы к текущей и будущей дате могут выполняться многократно, поэтому не маркируем
-        if date_to_check < today:
-            helpers.set_date_processed(r, date_to_check)
-        else:
-            info_message = f"{date_to_check} has been processed. And it can be processed again if needed"
-            logger.info(info_message)
-            return HttpResponse(info_message)
-
-        date_to_check = helpers.get_date_to_check(r, date_to_check)
-        time.sleep(60)
-
-        # Код поправлен с целью обрабатывать даты в будущем,
-        # но пока допустим лишь один запрос к конкретной дате
-        if date_to_check > today:
-            break
-
-    return HttpResponse("All requests have been completed")
+    info_message = f"{date_to_check} has been processed. And it can be processed again if needed"
+    logger.info(info_message)
+    return HttpResponse(info_message)
 
 
 @permission_classes((IsAuthenticated,))
