@@ -55,6 +55,8 @@ def match_post_save_handler(sender, instance, created, **kwargs):
         main_team = instance.opponent
         results = t_models.Match.ResultVals
 
+        result = None
+
         if instance.result:
             match instance.result:
                 case results.WIN:
@@ -63,8 +65,6 @@ def match_post_save_handler(sender, instance, created, **kwargs):
                     result = results.WIN
                 case _:
                     result = results.DRAW
-        else:
-            result = None
 
         points_received = (
             instance.tournament.points_per_win
