@@ -30,7 +30,10 @@ logger = logging.getLogger("basic_logger")
 
 
 r = redis.Redis(
-    host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=settings.REDIS_DB
+    host=settings.REDIS_HOST,
+    port=settings.REDIS_PORT,
+    db=settings.REDIS_DB,
+    password=settings.REDIS_PASS,
 )
 main_api = getattr(api_source, settings.MAIN_API)()
 main_api_model = getattr(t_models, settings.MAIN_API_MODEL)()
@@ -89,12 +92,12 @@ def page_not_found(request, exception):
 @api_view(["GET"])
 def get_results(request, process_date="", current=True):
     """
-    Метод запрашивает результаты матчей через АПИ. 
+    Метод запрашивает результаты матчей через АПИ.
     И далее записывает результаты в базу данных.
     По умолчанию выбирается текущая дата и обновляются результаты текущих турниров.
     То есть турниры по умолчанию фильтруются по полю current=True.
     Если же передана дата то будут обрабатываться матчи именно на ту дату.
-    Если параметр current приходит как False, 
+    Если параметр current приходит как False,
     то уже будут обрабатываться недействующие турниры.
     Сезон будет выбран на основании даты.
     Берется год и проверяется - попадает ли в годы сезона.
@@ -121,7 +124,6 @@ def get_results(request, process_date="", current=True):
         "score",
     )
 
-
     if api_requests_count >= MAX_REQUESTS_COUNT:
         logger.error("We have reached the limit of API requests")
         return HttpResponse("we have reached the limit of the requests")
@@ -140,8 +142,8 @@ def get_results(request, process_date="", current=True):
             continue
 
         tournament_api_id = tournament_api_obj.api_football_id
-        tournament_api_season = (
-            main_api_model.get_tournament_api_season_by_tournament(t)
+        tournament_api_season = main_api_model.get_tournament_api_season_by_tournament(
+            t
         )
 
         payload = main_api.get_payload(
@@ -154,9 +156,7 @@ def get_results(request, process_date="", current=True):
         response = main_api.send_request(endpoint, payload)
 
         if response["errors"]:
-            return HttpResponse(
-                "Response Errors: please check the logs for details"
-            )
+            return HttpResponse("Response Errors: please check the logs for details")
 
         helpers.increase_api_requests_count(r)
 
@@ -191,9 +191,7 @@ def get_results(request, process_date="", current=True):
             # is_moderated можно выставить в True
             is_moderated = True
 
-            api_match_record = main_api_model.get_match_record(
-                match_data["match_id"]
-            )
+            api_match_record = main_api_model.get_match_record(match_data["match_id"])
 
             if api_match_record:
                 match_record = api_match_record.content_object
@@ -233,7 +231,9 @@ def get_results(request, process_date="", current=True):
                 # но нужно найти иной способ решения данной задачи
                 # m.save(api_match_id=match_data["match_id"])
 
-    info_message = f"{date_to_check} has been processed. And it can be processed again if needed"
+    info_message = (
+        f"{date_to_check} has been processed. And it can be processed again if needed"
+    )
     logger.info(info_message)
     return HttpResponse(info_message)
 

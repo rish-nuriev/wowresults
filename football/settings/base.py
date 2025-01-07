@@ -168,6 +168,7 @@ EMAIL_USE_TLS = config("EMAIL_USE_TLS")
 REDIS_HOST = config("REDIS_HOST")
 REDIS_PORT = config("REDIS_PORT")
 REDIS_DB = config("REDIS_DB")
+REDIS_PASS = config("REDIS_PASS")
 
 # логирование
 LOGGING = {
