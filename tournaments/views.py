@@ -226,7 +226,7 @@ def get_results(request, process_date="", current=True):
                 m.stage = None
                 m.is_moderated = is_moderated
                 m.score = match_data["score"]
-                m.api_match_id = match_data["match_id"]
+                m.custom = match_data["match_id"]
                 m.save()
                 # TODO Здесь добавляется несуществующее поле api_match_id
                 # оно используется потом в post_save handler

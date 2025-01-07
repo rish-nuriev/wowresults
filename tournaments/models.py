@@ -100,6 +100,9 @@ class Team(models.Model):
 
 
 class Match(models.Model):
+
+    __custom: str
+
     class ResultVals(models.TextChoices):
         WIN = "W", "Победа"
         DRAW = "D", "Ничья"
@@ -209,6 +212,20 @@ class Match(models.Model):
                 "match_id": self.id,
             },
         )
+
+    @property
+    def custom(self):
+        return self.__custom
+
+    @custom.setter
+    def custom(self, value):
+        self.__custom = value
+
+
+    # def save(self, *args, **kwargs):
+    #     if 'custom' in kwargs:
+    #         self.custom = 'custom'
+    #     super().save(*args, **kwargs)
 
 
 class Stage(models.Model):
