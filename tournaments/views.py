@@ -224,12 +224,8 @@ def get_results(request, process_date="", current=True):
                 m.stage = None
                 m.is_moderated = is_moderated
                 m.score = match_data["score"]
-                m.custom = match_data["match_id"]
+                m.temporary_match_id = match_data["match_id"]
                 m.save()
-                # TODO Здесь добавляется несуществующее поле api_match_id
-                # оно используется потом в post_save handler
-                # но нужно найти иной способ решения данной задачи
-                # m.save(api_match_id=match_data["match_id"])
 
     info_message = (
         f"{date_to_check} has been processed. And it can be processed again if needed"

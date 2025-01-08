@@ -89,7 +89,7 @@ def match_post_save_handler(sender, instance, created, **kwargs):
 
             api_model_object = main_api_model()
 
-            api_model_object.api_football_id = instance.custom
+            api_model_object.api_football_id = instance.temporary_match_id
             api_model_object.content_object = instance
             api_model_object.save()
 

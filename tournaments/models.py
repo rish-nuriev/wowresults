@@ -8,7 +8,8 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 
 
-logger = logging.getLogger('basic_logger')
+logger = logging.getLogger("basic_logger")
+
 
 class MainMatchesManager(models.Manager):
     def get_queryset(self):
@@ -101,8 +102,6 @@ class Team(models.Model):
 
 class Match(models.Model):
 
-    __custom: str
-
     class ResultVals(models.TextChoices):
         WIN = "W", "Победа"
         DRAW = "D", "Ничья"
@@ -135,6 +134,12 @@ class Match(models.Model):
     )
     group = models.CharField(max_length=2, verbose_name="Группа", blank=True, null=True)
     tour = models.IntegerField(blank=True, null=True, default=0, verbose_name="Тур")
+    temporary_match_id = models.IntegerField(
+        blank=True,
+        null=True,
+        default=0,
+        verbose_name="Поле для хранения временного ID от АПИ",
+    )
     date = models.DateTimeField(
         default=django.utils.timezone.now, verbose_name="Дата и время"
     )
@@ -202,7 +207,6 @@ class Match(models.Model):
     def __str__(self):
         return f"{self.main_team.title} - {self.opponent.title}"
 
-
     def get_absolute_url(self):
         return reverse(
             "match",
@@ -212,21 +216,6 @@ class Match(models.Model):
                 "match_id": self.id,
             },
         )
-
-    @property
-    def custom(self):
-        return self.__custom
-
-    @custom.setter
-    def custom(self, value):
-        self.__custom = value
-
-
-    # def save(self, *args, **kwargs):
-    #     if 'custom' in kwargs:
-    #         self.custom = 'custom'
-    #     super().save(*args, **kwargs)
-
 
 class Stage(models.Model):
     title = models.CharField(max_length=255, verbose_name="Стадия турнира")
@@ -307,14 +296,13 @@ class ApiFootballID(models.Model):
     @classmethod
     def get_team_by_api_id(cls, team_id_from_api):
         team_ct = ContentType.objects.get_for_model(Team)
-        api_obj = (
-            cls.objects.filter(content_type=team_ct, api_football_id=team_id_from_api)
-            .first()
-        )
+        api_obj = cls.objects.filter(
+            content_type=team_ct, api_football_id=team_id_from_api
+        ).first()
         team = None
 
         if not api_obj:
-            warning_msg = f'get_team_by_api_id method: {api_obj} is missing for team_id_from_api-{team_id_from_api}'
+            warning_msg = f"get_team_by_api_id method: {api_obj} is missing for team_id_from_api-{team_id_from_api}"
             logger.warning(warning_msg)
         else:
             team = api_obj.content_object
@@ -323,10 +311,9 @@ class ApiFootballID(models.Model):
     @classmethod
     def get_tournament_api_obj_by_tournament(cls, tournament):
         tournament_ct = ContentType.objects.get_for_model(Tournament)
-        return (
-            cls.objects.filter(content_type=tournament_ct, object_id=tournament.id)
-            .first()
-        )
+        return cls.objects.filter(
+            content_type=tournament_ct, object_id=tournament.id
+        ).first()
 
     @classmethod
     def get_match_record(cls, match_id):
@@ -338,9 +325,7 @@ class ApiFootballID(models.Model):
     @classmethod
     def get_api_match_record_by_match_obj(cls, match_obj):
         match_ct = ContentType.objects.get_for_model(Match)
-        return cls.objects.filter(
-            content_type=match_ct, object_id=match_obj.id
-        ).first()
+        return cls.objects.filter(content_type=match_ct, object_id=match_obj.id).first()
 
     @classmethod
     def get_team_record(cls, team_id):
