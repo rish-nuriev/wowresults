@@ -12,8 +12,26 @@ logger = logging.getLogger("basic_logger")
 
 
 class MainMatchesManager(models.Manager):
+    """
+    Кастомный менеджер для модели Match.
+    Возвращает по умолчанию только матчи сыгранные дома (главные).
+    Это необходимо чтобы исключить дубликаты.
+    Так как каждый матч записывается в базу в 2 экземплярах:
+    первый - для команды играющей дома,
+    второй - для команды на выезде
+    """
+
     def get_queryset(self):
-        return super().get_queryset().filter(at_home=True)
+        return (
+            super()
+            .get_queryset()
+            .select_related("main_team", "opponent", "tournament")
+            .filter(at_home=True)
+        )
+
+    def get_matches_by_date(self, date):
+        """Выборка матчей на определенную дату"""
+        return self.get_queryset().filter(date__date=date)
 
 
 class Tournament(models.Model):
@@ -216,6 +234,11 @@ class Match(models.Model):
                 "match_id": self.id,
             },
         )
+
+    @classmethod
+    def get_statuses_as_dict(cls):
+        return dict(cls.Statuses.choices)
+
 
 class Stage(models.Model):
     title = models.CharField(max_length=255, verbose_name="Стадия турнира")

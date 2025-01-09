@@ -68,7 +68,7 @@ class MatchesByTournament(ListView):
         tournament = t_models.Tournament.objects.prefetch_related("events").get(
             slug=self.kwargs["t_slug"]
         )
-        context["statuses"] = dict(t_models.Match.Statuses.choices)
+        context["statuses"] = t_models.Match.get_statuses_as_dict()
         context["tournament"] = tournament
         context["tours_range"] = range(1, tournament.tours_count + 1)
         context.update(self.kwargs)
