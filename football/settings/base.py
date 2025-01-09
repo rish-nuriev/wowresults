@@ -201,3 +201,4 @@ LOGGING = {
         },
     },
 }
+SHELL_PLUS_PRINT_SQL_TRUNCATE = None
