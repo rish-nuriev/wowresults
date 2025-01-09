@@ -24,7 +24,7 @@ from tournaments.api_list.api_parser import ApiParserError, ApiParsersContainer
 import tournaments.models as t_models
 import tournaments.api_list.apifootball as api_source
 
-from . import helpers
+from . import redis_tools
 
 logger = logging.getLogger("basic_logger")
 
@@ -110,7 +110,7 @@ def get_results(request, process_date="", current=True):
     today = datetime.now(timezone.utc).date()
 
     date_to_check = process_date or today
-    api_requests_count = helpers.get_api_requests_count(r)
+    api_requests_count = redis_tools.get_api_requests_count(r)
 
     match_options = (
         "match_id",
@@ -158,7 +158,7 @@ def get_results(request, process_date="", current=True):
         if response["errors"]:
             return HttpResponse("Response Errors: please check the logs for details")
 
-        helpers.increase_api_requests_count(r)
+        redis_tools.increase_api_requests_count(r)
 
         matches = api_parser.parse_matches(response)
 
@@ -246,7 +246,7 @@ def get_teams(request):
     Автоматически связать команды не получится (название команды может быть записано по-другому)
     """
 
-    api_requests_count = helpers.get_api_requests_count(r)
+    api_requests_count = redis_tools.get_api_requests_count(r)
     if api_requests_count >= MAX_REQUESTS_COUNT:
         logger.error("we have reached the limit of the requests")
         return HttpResponse("we have reached the limit of the requests")
@@ -273,7 +273,7 @@ def get_teams(request):
         if response["errors"]:
             return HttpResponse("Response Errors: please check the logs for details")
 
-        helpers.increase_api_requests_count(r)
+        redis_tools.increase_api_requests_count(r)
 
         teams = api_parser.parse_teams(response)
 
@@ -339,7 +339,7 @@ def get_goals_stats(request):
         .order_by("-id")[:10]
     )
 
-    api_requests_count = helpers.get_api_requests_count(r)
+    api_requests_count = redis_tools.get_api_requests_count(r)
 
     if api_requests_count >= MAX_REQUESTS_COUNT:
         logger.error("we have reached the limit of the requests")
@@ -356,7 +356,7 @@ def get_goals_stats(request):
         if response["errors"]:
             return HttpResponse("Response Errors: please check the logs for details")
 
-        helpers.increase_api_requests_count(r)
+        redis_tools.increase_api_requests_count(r)
 
         goals = api_parser.parse_goals(response)
 
