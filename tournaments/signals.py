@@ -30,6 +30,8 @@ def match_pre_delete_handler(sender, instance, **kwargs):
 
 @receiver(pre_save, sender=t_models.Match)
 def match_pre_save_handler(sender, instance, **kwargs):
+    # в данном методе на основании забитых и пропущенных мячей
+    # вычисляетс результат а также кол-во полученных очков
     instance.points_received = 0
     if instance.goals_scored is not None and instance.goals_conceded is not None:
         if instance.goals_scored > instance.goals_conceded:
