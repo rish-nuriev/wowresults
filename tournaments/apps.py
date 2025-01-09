@@ -7,4 +7,4 @@ class TournamentsConfig(AppConfig):
     verbose_name = "Турниры"
 
     def ready(self):
-        import tournaments.handlers
+        import tournaments.signals
