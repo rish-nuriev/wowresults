@@ -186,6 +186,7 @@
     document.addEventListener('DOMContentLoaded', (event) => {
         // DOM загружена
         {% block domready %}
+          $('[data-toggle="tooltip"]').tooltip();
         {% endblock domready %}
     })
   </script>

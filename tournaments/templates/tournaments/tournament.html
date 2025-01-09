@@ -58,10 +58,9 @@
             {% if not tour %} <li><a href="{% url "tour" t_slug t.grouper %}">{{ t.grouper }} Тур</a> {% endif %}
                 <ul>
                     {% for match in t.list %}
-                    <li>{{ forloop.counter }}) <span data-toggle="tooltip" data-placement="top" title="Время Московское">{{ match.date }}</span> 
-                        {% if match.status == 'TBD' %} <span class="tbd" data-toggle="tooltip" data-placement="top" title="Точная дата неизвестна">(?)</span> {% endif %} ||  
-                        <a href="{% url "match" match.tournament.slug t.grouper match.id %}"> {{ match.main_team }}-{{ match.opponent }} </a>
-                        {% if match.goals_scored != None %} : {{ match.goals_scored }} - {{ match.goals_conceded }} {% endif %} - {{statuses|get_item:match.status}}</li>
+                    <li>
+                        {% include "tournaments/match_preview.html" with match=match date_format="DATETIME_FORMAT" %}
+                    </li>
                     {% endfor %}
                 </ul>
             </br>
@@ -83,10 +82,3 @@
 
 </div>
 {% endblock content %}
-
-
-{% block domready %}
-    $('[data-toggle="tooltip"]').tooltip();
-{% endblock domready %}
-
-

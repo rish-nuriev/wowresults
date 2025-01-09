@@ -1,5 +1,3 @@
-{% load custom_filters %}
-
 {% if matches_cnt %}
 
     <h3 class="heading">Матчи сегодня</h3>
@@ -10,12 +8,7 @@
     <p>{{ t.grouper }}</p>
         <ul>
             {% for match in t.list %}
-            <li>
-                <span data-toggle="tooltip" data-placement="top" title="Время Московское">{{ match.date|date:"H:i" }}</span> 
-                {% if match.status == 'TBD' %} <span class="tbd" data-toggle="tooltip" data-placement="top" title="Точная дата неизвестна">(?)</span> {% endif %} ||  
-                <a href="{% url "match" match.tournament.slug match.tour match.id %}"> {{ match.main_team }}-{{ match.opponent }} </a>
-                {% if match.goals_scored != None %} : {{ match.goals_scored }} - {{ match.goals_conceded }} {% endif %} - {{statuses|get_item:match.status}}
-            </li>
+                {% include "tournaments/match_preview.html" with match=match date_format="H:i" %}
             {% endfor %}
         </ul>
     {% endfor %}
