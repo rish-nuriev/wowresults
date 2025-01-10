@@ -300,7 +300,7 @@ class ApiFootballID(models.Model):
     Также нужно учесть что т.к. GenericRelation не определено
     то в случае удаления Команды например, удаление из данной таблицы
     не происходит автоматически а реализовано в match_pre_delete_handler
-    """    
+    """
     api_football_id = models.PositiveIntegerField(null=True)
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField()
