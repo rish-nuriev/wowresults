@@ -292,6 +292,15 @@ class Event(models.Model):
 
 
 class ApiFootballID(models.Model):
+    """
+    Модели проекта не должны зависеть от модели АПИ напрямую
+    Поэтому связываю их через GenericForeignKey
+    И при этом нельзя использовать GenericRelation
+    Все запросы будут идти через связывающую модель ContentType
+    Также нужно учесть что т.к. GenericRelation не определено
+    то в случае удаления Команды например, удаление из данной таблицы
+    не происходит автоматически а реализовано в match_pre_delete_handler
+    """    
     api_football_id = models.PositiveIntegerField(null=True)
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField()
@@ -307,14 +316,6 @@ class ApiFootballID(models.Model):
         ]
         verbose_name = "Соответствия APIFootball"
         verbose_name_plural = "Соответствие APIFootball"
-
-    # Модели проекта не должны зависеть от модели АПИ напрямую
-    # Поэтому связываю их через GenericForeignKey
-    # И при этом нельзя использовать GenericRelation
-    # Все запросы будут идти через связывающую модель ContentType
-    # Также нужно учесть что т.к. GenericRelation не определено
-    # то в случае удаления Команды например, удаление из данной таблицы
-    # не происходит автоматически а реализовано в match_pre_delete_handler
 
     @classmethod
     def get_team_by_api_id(cls, team_id_from_api):
