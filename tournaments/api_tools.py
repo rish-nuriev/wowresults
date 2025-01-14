@@ -16,15 +16,14 @@ def get_max_requests_count():
     return main_api.get_max_requests_count()
 
 
-def request_tournaments_matches_by_date(tournaments, date) -> dict:
+def request_tournaments_matches_by_date(tournaments, date_to_check) -> dict:
 
     endpoint = main_api.get_endpoint("results_by_tournament")
+    date = date_to_check.strftime(main_api.DATE_FORMAT)
 
     matches = {}
 
     for t in tournaments:
-
-        date = date.strftime(main_api.DATE_FORMAT)
 
         tournament_api_obj = main_api_model.get_tournament_api_obj_by_tournament(t)
 

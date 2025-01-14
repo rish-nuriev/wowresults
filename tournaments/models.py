@@ -229,6 +229,7 @@ class Match(models.Model, ApiModelMixin):
         PENALTY = "PEN", "Серия пенальти"
         TOBEDEFINED = "TBD", "Точная дата не известна"
         POSTPONED = "PST", "Отложен"
+        INTERRUPTED = "INT", "Прерван"
 
     tournament = models.ForeignKey(
         Tournament,
