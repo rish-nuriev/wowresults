@@ -150,7 +150,7 @@ def get_results(request, process_date="", current=True):
         if response["errors"]:
             return HttpResponse("Response Errors: please check the logs for details")
 
-        redis_tools.increase_api_requests_count(r)
+        utils.increase_api_requests_count()
 
         matches = api_parser.parse_matches(response)
 
@@ -262,7 +262,7 @@ def get_teams(request):
         if response["errors"]:
             return HttpResponse("Response Errors: please check the logs for details")
 
-        redis_tools.increase_api_requests_count(r)
+        utils.increase_api_requests_count()
 
         teams = api_parser.parse_teams(response)
 
@@ -341,7 +341,7 @@ def get_goals_stats(request):
         if response["errors"]:
             return HttpResponse("Response Errors: please check the logs for details")
 
-        redis_tools.increase_api_requests_count(r)
+        utils.increase_api_requests_count()
 
         goals = api_parser.parse_goals(response)
 
