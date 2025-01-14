@@ -1,10 +1,8 @@
-import logging
-from django.conf import settings
-
 import requests
-from tournaments.api_list.api_interface import ApiInterface
 
-logger = logging.getLogger("basic_logger")
+from django.conf import settings
+from tournaments.tasks import async_error_logging
+from tournaments.api_list.api_interface import ApiInterface
 
 
 class ApiFootballException(Exception):
@@ -57,7 +55,7 @@ class ApiFootball(ApiInterface):
 
         if response["errors"]:
             error_message = f'Ошибка при запросе к АПИ Футбол - Response Errors: {response["errors"]}'
-            logger.error(error_message)
+            async_error_logging.delay(error_message)
 
         return response
 

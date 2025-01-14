@@ -1,9 +1,8 @@
 from datetime import datetime, timezone
 import tempfile
-import time
+
 import logging
 import requests
-import redis
 
 from django.core import files
 from django.http import HttpResponse, HttpResponseNotFound, Http404
@@ -19,22 +18,18 @@ from rest_framework.decorators import (
     api_view,
 )
 
+from tournaments import utils
 from tournaments.api_list.api_parser import ApiParserError, ApiParsersContainer
 
 import tournaments.models as t_models
 import tournaments.api_list.apifootball as api_source
 
+from .tasks import async_error_logging
 from . import redis_tools
 
 logger = logging.getLogger("basic_logger")
 
 
-r = redis.Redis(
-    host=settings.REDIS_HOST,
-    port=settings.REDIS_PORT,
-    db=settings.REDIS_DB,
-    password=settings.REDIS_PASS,
-)
 main_api = getattr(api_source, settings.MAIN_API)()
 main_api_model = getattr(t_models, settings.MAIN_API_MODEL)()
 api_parsers_container = ApiParsersContainer(main_api)
@@ -110,7 +105,6 @@ def get_results(request, process_date="", current=True):
     today = datetime.now(timezone.utc).date()
 
     date_to_check = process_date or today
-    api_requests_count = redis_tools.get_api_requests_count(r)
 
     match_options = (
         "match_id",
@@ -124,9 +118,7 @@ def get_results(request, process_date="", current=True):
         "score",
     )
 
-    if api_requests_count >= MAX_REQUESTS_COUNT:
-        logger.error("We have reached the limit of API requests")
-        return HttpResponse("we have reached the limit of the requests")
+    utils.check_api_requests(MAX_REQUESTS_COUNT)
 
     tournaments = t_models.Tournament.objects.filter(
         current=current, is_regular=True, season__contains=date_to_check.year
@@ -158,7 +150,7 @@ def get_results(request, process_date="", current=True):
         if response["errors"]:
             return HttpResponse("Response Errors: please check the logs for details")
 
-        redis_tools.increase_api_requests_count(r)
+        utils.increase_api_requests_count()
 
         matches = api_parser.parse_matches(response)
 
@@ -246,10 +238,7 @@ def get_teams(request):
     Автоматически связать команды не получится (название команды может быть записано по-другому)
     """
 
-    api_requests_count = redis_tools.get_api_requests_count(r)
-    if api_requests_count >= MAX_REQUESTS_COUNT:
-        logger.error("we have reached the limit of the requests")
-        return HttpResponse("we have reached the limit of the requests")
+    utils.check_api_requests(MAX_REQUESTS_COUNT)
 
     endpoint = main_api.get_endpoint("get_teams")
 
@@ -273,7 +262,7 @@ def get_teams(request):
         if response["errors"]:
             return HttpResponse("Response Errors: please check the logs for details")
 
-        redis_tools.increase_api_requests_count(r)
+        utils.increase_api_requests_count()
 
         teams = api_parser.parse_teams(response)
 
@@ -339,11 +328,7 @@ def get_goals_stats(request):
         .order_by("-id")[:10]
     )
 
-    api_requests_count = redis_tools.get_api_requests_count(r)
-
-    if api_requests_count >= MAX_REQUESTS_COUNT:
-        logger.error("we have reached the limit of the requests")
-        return HttpResponse("we have reached the limit of the requests")
+    utils.check_api_requests(MAX_REQUESTS_COUNT)
 
     for m in matches:
 
@@ -356,7 +341,7 @@ def get_goals_stats(request):
         if response["errors"]:
             return HttpResponse("Response Errors: please check the logs for details")
 
-        redis_tools.increase_api_requests_count(r)
+        utils.increase_api_requests_count()
 
         goals = api_parser.parse_goals(response)
 
