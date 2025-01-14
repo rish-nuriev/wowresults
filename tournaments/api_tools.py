@@ -107,3 +107,29 @@ def prepare_matches_data_for_saving(tournament_matches: dict):
             matches_to_save.append((team1, team2, match_data))
 
     return matches_to_save
+
+
+def request_stats_for_matches(matches):
+    endpoint = main_api.get_endpoint("get_goals_stats")
+
+    matches_to_update = {}
+
+    for m in matches:
+
+        payload = main_api.get_payload(
+            task="get_goals_stats", match_obj=m, main_api_model=main_api_model
+        )
+
+        response = main_api.send_request(endpoint, payload)
+        utils.increase_api_requests_count()
+
+        if response["errors"]:
+            return HttpResponse("Response Errors: please check the logs for details")
+
+        goals = api_parser.parse_goals(response)
+        goals_stats = api_parser.get_goals_stats(goals)
+
+        if goals_stats:
+            matches_to_update[m.id] = goals_stats
+
+    return matches_to_update

@@ -202,38 +202,12 @@ def get_teams(request):
 @api_view(["GET"])
 def get_goals_stats(request):
 
-    endpoint = main_api.get_endpoint("get_goals_stats")
-
-    matches = (
-        t_models.Match.main_matches.filter(
-            status=t_models.Match.Statuses.FULL_TIME,
-            goals_stats__isnull=True,
-        )
-        .select_related("main_team", "opponent")
-        .order_by("-id")[:10]
-    )
-
     utils.check_api_requests(MAX_REQUESTS_COUNT)
 
-    for m in matches:
+    matches = t_models.Match.main_matches.get_matches_to_update_stats()
 
-        payload = main_api.get_payload(
-            task="get_goals_stats", match_obj=m, main_api_model=main_api_model
-        )
-
-        response = main_api.send_request(endpoint, payload)
-
-        if response["errors"]:
-            return HttpResponse("Response Errors: please check the logs for details")
-
-        utils.increase_api_requests_count()
-
-        goals = api_parser.parse_goals(response)
-
-        goals_stats = api_parser.get_goals_stats(goals)
-
-        m.goals_stats = goals_stats
-        m.save()
+    matches_stats = api_tools.request_stats_for_matches(matches)
+    t_models.Match.update_goals_stats_for_matches(matches_stats)
 
     logger.info("get_goals_stats request has been completed")
     return HttpResponse("Request has been completed")

@@ -85,6 +85,7 @@ class ApiFootballID(models.Model):
 class ApiModelMixin:
     main_api_model = globals()[settings.MAIN_API_MODEL]()
 
+
 class MainMatchesManager(models.Manager):
     """
     Кастомный менеджер для модели Match.
@@ -106,6 +107,18 @@ class MainMatchesManager(models.Manager):
     def get_matches_by_date(self, date):
         """Выборка матчей на определенную дату"""
         return self.get_queryset().filter(date__date=date)
+
+    def get_matches_to_update_stats(self):
+        """Выборка 10 завершившихся матчей с незаполненной статистикой"""
+        return (
+            self.get_queryset()
+            .filter(
+                status=Match.Statuses.FULL_TIME,
+                goals_stats__isnull=True,
+            )
+            .select_related("main_team", "opponent")
+            .order_by("-id")[:10]
+        )
 
 
 class RegularTournamentsManager(models.Manager):
@@ -330,6 +343,16 @@ class Match(models.Model, ApiModelMixin):
             },
         )
 
+    def update_goals_stats(self, goals_stats):
+        self.goals_stats = goals_stats
+        self.save()
+
+    @classmethod
+    def update_goals_stats_for_matches(cls, matches: dict):
+        for match_id, goals_stats in matches.items():
+            match_to_update = cls.objects.get(pk=match_id)
+            match_to_update.update_goals_stats(goals_stats)
+
     @classmethod
     def get_statuses_as_dict(cls):
         return dict(cls.Statuses.choices)
@@ -351,13 +374,13 @@ class Match(models.Model, ApiModelMixin):
         if api_match_record:
             match_record = api_match_record.content_object
 
-            #result, points_received определяются в pre_save signals
+            # result, points_received определяются в pre_save signals
             data_for_update = {
                 "date": match_data["match_date"],
                 "status": match_data["status"],
                 "goals_scored": match_data["goals_scored"],
                 "goals_conceded": match_data["goals_conceded"],
-                "is_moderated": match_data['is_moderated'],
+                "is_moderated": match_data["is_moderated"],
                 "result": match_record.result,
                 "points_received": match_record.points_received,
             }
@@ -375,16 +398,16 @@ class Match(models.Model, ApiModelMixin):
             m.status = match_data["status"]
             m.goals_scored = match_data["goals_scored"]
             m.goals_conceded = match_data["goals_conceded"]
-            m.tournament_id = match_data['tournament_id']
+            m.tournament_id = match_data["tournament_id"]
             m.tour = match_data["tour"]
             m.stage = None
-            m.is_moderated = match_data['is_moderated']
+            m.is_moderated = match_data["is_moderated"]
             m.score = match_data["score"]
             m.temporary_match_id = match_data["match_id"]
             m.save()
 
     @classmethod
-    def save_prepared_matches(cls, matches:list[tuple]):
+    def save_prepared_matches(cls, matches: list[tuple]):
         for team1, team2, match_data in matches:
             cls.create_or_update_match(team1, team2, match_data)
 
