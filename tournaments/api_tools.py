@@ -1,113 +1,110 @@
+import logging
+from django.conf import settings
+from django.http import HttpResponse
+from tournaments.api_list.api_parsers import ApiParserError, ApiParsersContainer
+from tournaments import models, utils
+import tournaments.api_list.api_classes as api_source
+
+main_api = getattr(api_source, settings.MAIN_API)()
+main_api_model = getattr(models, settings.MAIN_API_MODEL)()
+api_parsers_container = ApiParsersContainer(main_api)
+api_parser = api_parsers_container.get_api_parser()
+logger = logging.getLogger("basic_logger")
 
 
-
-endpoint = main_api.get_endpoint("results_by_tournament")
-
-
-match_options = (
-    "match_id",
-    "match_date",
-    "main_team_id",
-    "opponent_id",
-    "tour",
-    "status",
-    "goals_scored",
-    "goals_conceded",
-    "score",
-)
+def get_max_requests_count():
+    return main_api.get_max_requests_count()
 
 
-for t in tournaments:
+def request_tournaments_matches_by_date(tournaments, date) -> dict:
 
-    date = date_to_check.strftime(main_api.DATE_FORMAT)
+    endpoint = main_api.get_endpoint("results_by_tournament")
 
-    tournament_api_obj = main_api_model.get_tournament_api_obj_by_tournament(t)
+    matches = {}
 
-    if not tournament_api_obj:
-        continue
+    for t in tournaments:
 
-    tournament_api_id = tournament_api_obj.api_football_id
-    tournament_api_season = main_api_model.get_tournament_api_season_by_tournament(
-        t
-    )
+        date = date.strftime(main_api.DATE_FORMAT)
 
-    payload = main_api.get_payload(
-        task="results_by_tournament",
-        tournament_api_id=tournament_api_id,
-        tournament_api_season=tournament_api_season,
-        date=date,
-    )
+        tournament_api_obj = main_api_model.get_tournament_api_obj_by_tournament(t)
 
-    response = main_api.send_request(endpoint, payload)
-
-    if response["errors"]:
-        return HttpResponse("Response Errors: please check the logs for details")
-
-    utils.increase_api_requests_count()
-
-    matches = api_parser.parse_matches(response)
-
-    for match in matches:
-
-        match_data = {}
-
-        for option in match_options:
-            try:
-                match_data[option] = getattr(api_parser, "get_" + option)(match)
-            except AttributeError:
-                message = f"get_{option} method should be realized in {api_parser.__class__.__name__}"
-                logger.error(message)
-                continue
-            except ApiParserError:
-                continue
-
-        team1 = main_api_model.get_team_by_api_id(match_data["main_team_id"])
-        team2 = main_api_model.get_team_by_api_id(match_data["opponent_id"])
-
-        if not team1 or not team2:
-            # todo We need to add this team into DB using specific API request
-            # but not at the same time, the task needs to be added to the queue
+        if not tournament_api_obj:
             continue
 
-        # поле is_moderated задумывалось как требование ручной корректировки данных
-        # в админке т.к. если матч заканчивался по пенальти не было данных из АПИ
-        # Решение - купить платный сервис АПИ
-        # Пока используем только регулярные чемпионаты поэтому
-        # is_moderated можно выставить в True
-        is_moderated = True
+        tournament_api_id = tournament_api_obj.api_football_id
+        tournament_api_season = main_api_model.get_tournament_api_season_by_tournament(
+            t
+        )
 
-        api_match_record = main_api_model.get_match_record(match_data["match_id"])
+        payload = main_api.get_payload(
+            task="results_by_tournament",
+            tournament_api_id=tournament_api_id,
+            tournament_api_season=tournament_api_season,
+            date=date,
+        )
 
-        if api_match_record:
-            match_record = api_match_record.content_object
+        utils.increase_api_requests_count()
 
-            data_for_update = {
-                "date": match_data["match_date"],
-                "status": match_data["status"],
-                "goals_scored": match_data["goals_scored"],
-                "goals_conceded": match_data["goals_conceded"],
-                "is_moderated": is_moderated,
-                "result": match_record.result,
-                "points_received": match_record.points_received,
-            }
+        response = main_api.send_request(endpoint, payload)
 
-            for field, value in data_for_update.items():
-                setattr(match_record, field, value)
+        if response["errors"]:
+            return HttpResponse("Response Errors: please check the logs for details")
 
-            match_record.save()
-        else:
-            m = t_models.Match()
+        matches[t.id] = api_parser.parse_matches(response)
 
-            m.date = match_data["match_date"]
-            m.main_team = team1
-            m.opponent = team2
-            m.status = match_data["status"]
-            m.goals_scored = match_data["goals_scored"]
-            m.goals_conceded = match_data["goals_conceded"]
-            m.tournament = t
-            m.tour = match_data["tour"]
-            m.stage = None
-            m.is_moderated = is_moderated
-            m.score = match_data["score"]
-            m.temporary_match_id = match_data["match_id"]
-            m.save()
+    return matches
+
+
+def prepare_matches_data_for_saving(tournament_matches: dict):
+
+    match_options = (
+        "match_id",
+        "match_date",
+        "main_team_id",
+        "opponent_id",
+        "tour",
+        "status",
+        "goals_scored",
+        "goals_conceded",
+        "score",
+    )
+
+    matches_to_save = []
+
+    for tournament_id, matches in tournament_matches.items():
+
+        for match in matches:
+
+            match_data = {}
+
+            for option in match_options:
+                try:
+                    match_data[option] = getattr(api_parser, "get_" + option)(match)
+                except AttributeError:
+                    message = f"get_{option} method should be realized in {api_parser.__class__.__name__}"
+                    logger.error(message)
+                    return HttpResponse("Errors: please check the logs for details")
+                except ApiParserError as e:
+                    logger.error(e)
+                    return HttpResponse("Errors: please check the logs for details")
+
+            team1 = main_api_model.get_team_by_api_id(match_data["main_team_id"])
+            team2 = main_api_model.get_team_by_api_id(match_data["opponent_id"])
+
+            if not team1 or not team2:
+                # todo We need to add this team into DB using specific API request
+                # but not at the same time, the task needs to be added to the queue
+                continue
+
+            match_data["tournament_id"] = tournament_id
+
+            # поле is_moderated задумывалось как требование ручной корректировки данных
+            # в админке т.к. если матч заканчивался по пенальти не было данных из АПИ
+            # Решение - купить платный сервис АПИ
+            # Пока используем только регулярные чемпионаты поэтому
+            # is_moderated можно выставить в True
+            match_data["is_moderated"] = True
+
+            matches_to_save.append((team1, team2, match_data))
+
+    return matches_to_save
