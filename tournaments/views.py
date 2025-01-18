@@ -1,10 +1,6 @@
 from datetime import datetime, timezone
-import tempfile
 
 import logging
-import requests
-
-from django.core import files
 from django.http import HttpResponse, HttpResponseNotFound, Http404
 from django.shortcuts import get_object_or_404
 from django.views.generic import DetailView, ListView
@@ -17,7 +13,7 @@ from rest_framework.decorators import (
     api_view,
 )
 
-from tournaments import api_tools, utils
+from tournaments import api_tools, tasks, utils
 import tournaments.models as t_models
 
 
@@ -125,74 +121,14 @@ def get_teams(request):
 
     utils.check_api_requests(MAX_REQUESTS_COUNT)
 
-    endpoint = main_api.get_endpoint("get_teams")
+    tournaments = t_models.Tournament.objects.filter(pk=17)
 
-    tournaments = t_models.Tournament.objects.filter(current=True)
+    teams_by_country = api_tools.request_teams_by_tournaments(tournaments)
+    teams_data = api_tools.prepare_teams_data_for_saving(teams_by_country)
+    teams_to_save, teams_to_add_logo = teams_data
 
-    for t in tournaments:
-
-        tournament_api_id = main_api_model.get_tournament_api_id_by_tournament(t)
-        tournament_api_season = main_api_model.get_tournament_api_season_by_tournament(
-            t
-        )
-
-        payload = main_api.get_payload(
-            task="get_teams",
-            tournament_api_id=tournament_api_id,
-            tournament_api_season=tournament_api_season,
-        )
-
-        response = main_api.send_request(endpoint, payload)
-
-        if response["errors"]:
-            return HttpResponse("Response Errors: please check the logs for details")
-
-        utils.increase_api_requests_count()
-
-        teams = api_parser.parse_teams(response)
-
-        for team in teams:
-
-            team_id = api_parser.get_team_id(team)
-            team_name = api_parser.get_team_name(team)
-            team_logo = api_parser.get_team_logo(team)
-
-            api_team_record = main_api_model.get_team_record(team_id)
-
-            if api_team_record:
-                team_obj = api_team_record.content_object
-            else:
-                team_obj = t_models.Team.objects.create(
-                    title=team_name,
-                    country=t.country,
-                    city=team_name,
-                    is_moderated=False,  # False потому что нужно скорректировать город и название
-                )
-
-                api_model_obj = main_api_model.__class__()
-
-                api_model_obj.api_football_id = team_id
-                api_model_obj.content_object = team_obj
-
-                api_model_obj.save()
-
-            if not team_obj.logo:
-                logo_url = team_logo
-                logo_response = requests.get(logo_url, stream=True, timeout=10)
-                if logo_response.status_code == requests.codes.ok:
-                    file_name = logo_url.split("/")[-1]
-                    # Create a temporary file
-                    tmp_file = tempfile.NamedTemporaryFile()
-                    # Read the streamed image in sections
-                    for block in logo_response.iter_content(1024 * 8):
-                        # If no more file then stop
-                        if not block:
-                            break
-                        # Write image block to temporary file
-                        tmp_file.write(block)
-                    # Save the temporary image to the model#
-                    # This saves the model so be sure that it is valid
-                    team_obj.logo.save(file_name, files.File(tmp_file))
+    tasks.async_save_raw_teams.delay(teams_to_save)
+    tasks.async_save_multiple_logos.delay(teams_to_add_logo)
 
     return HttpResponse("Request completed")
 

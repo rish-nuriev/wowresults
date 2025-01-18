@@ -7,6 +7,8 @@ from django.db import models
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 
+from tournaments import image_tools
+
 
 logger = logging.getLogger("basic_logger")
 
@@ -210,6 +212,12 @@ class Team(models.Model):
     )
     is_moderated = models.BooleanField(default=True, verbose_name="Проверка пройдена")
     logo = models.ImageField(upload_to="images/teams/", null=True)
+    temporary_team_id = models.IntegerField(
+        blank=True,
+        null=True,
+        default=0,
+        verbose_name="Поле для хранения временного ID от АПИ",
+    )
 
     class Meta:
         verbose_name = "Команда"
@@ -223,6 +231,32 @@ class Team(models.Model):
 
     def __str__(self):
         return self.title
+
+    @classmethod
+    def save_raw_teams(cls, teams):
+        print('SAVE_RAW')
+        for team_id, team_name, country_id, team_logo in teams:
+            team_obj = cls.objects.create(
+                temporary_team_id=team_id,
+                title=team_name,
+                country_id=country_id,
+                city=team_name,
+                is_moderated=False,  # False потому что нужно скорректировать город и название
+            )
+            if team_logo:
+                team_obj.save_logo(team_logo)
+
+    @classmethod
+    def save_multiple_logos(cls, teams) -> None:
+        for team_obj, team_logo in teams:
+            team_obj.save_logo(team_logo)
+
+    def save_logo(self, logo_url: str) -> None:
+        print('SAVING')
+        logo_data = image_tools.download_logo(logo_url)
+        if logo_data:
+            file_name, file = logo_data
+            self.logo.save(file_name, file)
 
 
 class Match(models.Model, ApiModelMixin):

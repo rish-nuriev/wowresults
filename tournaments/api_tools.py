@@ -133,3 +133,69 @@ def request_stats_for_matches(matches):
             matches_to_update[m.id] = goals_stats
 
     return matches_to_update
+
+
+def request_teams_by_tournaments(tournaments):
+
+    endpoint = main_api.get_endpoint("get_teams")
+
+    teams_by_country = {}
+
+    for t in tournaments:
+
+        tournament_api_obj = main_api_model.get_tournament_api_obj_by_tournament(t)
+        if not tournament_api_obj:
+            continue
+
+        tournament_api_id = tournament_api_obj.api_football_id
+        tournament_api_season = main_api_model.get_tournament_api_season_by_tournament(
+            t
+        )
+
+        payload = main_api.get_payload(
+            task="get_teams",
+            tournament_api_id=tournament_api_id,
+            tournament_api_season=tournament_api_season,
+        )
+
+        response = main_api.send_request(endpoint, payload)
+
+        utils.increase_api_requests_count()
+
+        if response["errors"]:
+            return HttpResponse("Response Errors: please check the logs for details")
+
+        teams = api_parser.parse_teams(response)
+
+        teams_by_country[t.country.id] = teams
+
+    return teams_by_country
+
+
+def prepare_teams_data_for_saving(teams_by_country):
+    teams_to_save, teams_to_add_logo = [], []
+
+    for country_id, teams in teams_by_country.items():
+        for team in teams:
+            team_id = api_parser.get_team_id(team)
+            team_name = api_parser.get_team_name(team)
+            team_logo = api_parser.get_team_logo(team)
+
+            api_team_record = main_api_model.get_team_record(team_id)
+
+            if api_team_record:
+                team_obj = api_team_record.content_object
+                if team_logo and not team_obj.logo:
+                    teams_to_add_logo.append((team_obj, team_logo))
+
+            else:
+                teams_to_save.append((team_id, team_name, country_id, team_logo))
+
+    return teams_to_save, teams_to_add_logo
+
+    # api_model_obj = main_api_model.__class__()
+
+    # api_model_obj.api_football_id = team_id
+    # api_model_obj.content_object = team_obj
+
+    # api_model_obj.save()

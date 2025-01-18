@@ -25,7 +25,9 @@ def match_pre_delete_handler(sender, instance, **kwargs):
         except t_models.Match.DoesNotExist:
             logger.error("Related match doesn't exist in match_pre_delete_handler")
         except main_api_model.DoesNotExist:
-            logger.error("related_api_model_object doesn't exist in match_pre_delete_handler")
+            logger.error(
+                "related_api_model_object doesn't exist in match_pre_delete_handler"
+            )
 
 
 @receiver(pre_save, sender=t_models.Match)
@@ -102,3 +104,15 @@ def match_post_save_handler(sender, instance, created, **kwargs):
             setattr(instance, k, v)
 
         instance.save()
+
+
+@receiver(post_save, sender=t_models.Team)
+def team_post_save_handler(sender, instance, created, **kwargs):
+    if created:
+        main_api_model = getattr(t_models, settings.MAIN_API_MODEL)
+
+        api_model_object = main_api_model()
+
+        api_model_object.api_football_id = instance.temporary_team_id
+        api_model_object.content_object = instance
+        api_model_object.save()
