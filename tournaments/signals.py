@@ -54,7 +54,7 @@ def match_post_save_handler(sender, instance, created, **kwargs):
     # это необходимо чтобы всегда можно было полуить все матчи для команды
     # как на выезде так и дома.
     # А также сохраняю объект связанной модели АПИ для матча дома
-    if instance.at_home:
+    if instance.at_home and not kwargs.get('raw', False):
 
         main_team = instance.opponent
         results = t_models.Match.ResultVals
@@ -108,7 +108,7 @@ def match_post_save_handler(sender, instance, created, **kwargs):
 
 @receiver(post_save, sender=t_models.Team)
 def team_post_save_handler(sender, instance, created, **kwargs):
-    if created:
+    if created and not kwargs.get('raw', False):
         main_api_model = getattr(t_models, settings.MAIN_API_MODEL)
 
         api_model_object = main_api_model()
