@@ -1,14 +1,9 @@
 from datetime import datetime, timezone
-import tempfile
 
 import logging
-import requests
-
-from django.core import files
 from django.http import HttpResponse, HttpResponseNotFound, Http404
 from django.shortcuts import get_object_or_404
 from django.views.generic import DetailView, ListView
-from django.conf import settings
 
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import IsAuthenticated
@@ -18,23 +13,14 @@ from rest_framework.decorators import (
     api_view,
 )
 
-from tournaments import utils
-from tournaments.api_list.api_parser import ApiParserError, ApiParsersContainer
-
+from tournaments import api_tools, tasks, utils
 import tournaments.models as t_models
-import tournaments.api_list.apifootball as api_source
 
-from .tasks import async_error_logging
-from . import redis_tools
 
 logger = logging.getLogger("basic_logger")
 
 
-main_api = getattr(api_source, settings.MAIN_API)()
-main_api_model = getattr(t_models, settings.MAIN_API_MODEL)()
-api_parsers_container = ApiParsersContainer(main_api)
-api_parser = api_parsers_container.get_api_parser()
-MAX_REQUESTS_COUNT = main_api.get_max_requests_count()
+MAX_REQUESTS_COUNT = api_tools.get_max_requests_count()
 
 
 class MatchesByTournament(ListView):
@@ -100,124 +86,19 @@ def get_results(request, process_date="", current=True):
     Но возможно позже будут добавлены кубки, чемпионаты мира и т.п.
     """
 
-    endpoint = main_api.get_endpoint("results_by_tournament")
-
     today = datetime.now(timezone.utc).date()
 
     date_to_check = process_date or today
 
-    match_options = (
-        "match_id",
-        "match_date",
-        "main_team_id",
-        "opponent_id",
-        "tour",
-        "status",
-        "goals_scored",
-        "goals_conceded",
-        "score",
-    )
-
     utils.check_api_requests(MAX_REQUESTS_COUNT)
 
-    tournaments = t_models.Tournament.objects.filter(
-        current=current, is_regular=True, season__contains=date_to_check.year
+    tournaments = t_models.Tournament.reg_objects.get_tournaments_by_season(
+        date_to_check.year, current=current
     )
 
-    for t in tournaments:
-
-        date = date_to_check.strftime(main_api.DATE_FORMAT)
-
-        tournament_api_obj = main_api_model.get_tournament_api_obj_by_tournament(t)
-
-        if not tournament_api_obj:
-            continue
-
-        tournament_api_id = tournament_api_obj.api_football_id
-        tournament_api_season = main_api_model.get_tournament_api_season_by_tournament(
-            t
-        )
-
-        payload = main_api.get_payload(
-            task="results_by_tournament",
-            tournament_api_id=tournament_api_id,
-            tournament_api_season=tournament_api_season,
-            date=date,
-        )
-
-        response = main_api.send_request(endpoint, payload)
-
-        if response["errors"]:
-            return HttpResponse("Response Errors: please check the logs for details")
-
-        utils.increase_api_requests_count()
-
-        matches = api_parser.parse_matches(response)
-
-        for match in matches:
-
-            match_data = {}
-
-            for option in match_options:
-                try:
-                    match_data[option] = getattr(api_parser, "get_" + option)(match)
-                except AttributeError:
-                    message = f"get_{option} method should be realized in {api_parser.__class__.__name__}"
-                    logger.error(message)
-                    continue
-                except ApiParserError:
-                    continue
-
-            team1 = main_api_model.get_team_by_api_id(match_data["main_team_id"])
-            team2 = main_api_model.get_team_by_api_id(match_data["opponent_id"])
-
-            if not team1 or not team2:
-                # todo We need to add this team into DB using specific API request
-                # but not at the same time, the task needs to be added to the queue
-                continue
-
-            # поле is_moderated задумывалось как требование ручной корректировки данных
-            # в админке т.к. если матч заканчивался по пенальти не было данных из АПИ
-            # Решение - купить платный сервис АПИ
-            # Пока используем только регулярные чемпионаты поэтому
-            # is_moderated можно выставить в True
-            is_moderated = True
-
-            api_match_record = main_api_model.get_match_record(match_data["match_id"])
-
-            if api_match_record:
-                match_record = api_match_record.content_object
-
-                data_for_update = {
-                    "date": match_data["match_date"],
-                    "status": match_data["status"],
-                    "goals_scored": match_data["goals_scored"],
-                    "goals_conceded": match_data["goals_conceded"],
-                    "is_moderated": is_moderated,
-                    "result": match_record.result,
-                    "points_received": match_record.points_received,
-                }
-
-                for field, value in data_for_update.items():
-                    setattr(match_record, field, value)
-
-                match_record.save()
-            else:
-                m = t_models.Match()
-
-                m.date = match_data["match_date"]
-                m.main_team = team1
-                m.opponent = team2
-                m.status = match_data["status"]
-                m.goals_scored = match_data["goals_scored"]
-                m.goals_conceded = match_data["goals_conceded"]
-                m.tournament = t
-                m.tour = match_data["tour"]
-                m.stage = None
-                m.is_moderated = is_moderated
-                m.score = match_data["score"]
-                m.temporary_match_id = match_data["match_id"]
-                m.save()
+    matches = api_tools.request_tournaments_matches_by_date(tournaments, date_to_check)
+    matches_to_save = api_tools.prepare_matches_data_for_saving(matches)
+    t_models.Match.save_prepared_matches(matches_to_save)
 
     info_message = (
         f"{date_to_check} has been processed. And it can be processed again if needed"
@@ -240,74 +121,14 @@ def get_teams(request):
 
     utils.check_api_requests(MAX_REQUESTS_COUNT)
 
-    endpoint = main_api.get_endpoint("get_teams")
+    tournaments = t_models.Tournament.objects.filter(pk=17)
 
-    tournaments = t_models.Tournament.objects.filter(current=True)
+    teams_by_country = api_tools.request_teams_by_tournaments(tournaments)
+    teams_data = api_tools.prepare_teams_data_for_saving(teams_by_country)
+    teams_to_save, teams_to_add_logo = teams_data
 
-    for t in tournaments:
-
-        tournament_api_id = main_api_model.get_tournament_api_id_by_tournament(t)
-        tournament_api_season = main_api_model.get_tournament_api_season_by_tournament(
-            t
-        )
-
-        payload = main_api.get_payload(
-            task="get_teams",
-            tournament_api_id=tournament_api_id,
-            tournament_api_season=tournament_api_season,
-        )
-
-        response = main_api.send_request(endpoint, payload)
-
-        if response["errors"]:
-            return HttpResponse("Response Errors: please check the logs for details")
-
-        utils.increase_api_requests_count()
-
-        teams = api_parser.parse_teams(response)
-
-        for team in teams:
-
-            team_id = api_parser.get_team_id(team)
-            team_name = api_parser.get_team_name(team)
-            team_logo = api_parser.get_team_logo(team)
-
-            api_team_record = main_api_model.get_team_record(team_id)
-
-            if api_team_record:
-                team_obj = api_team_record.content_object
-            else:
-                team_obj = t_models.Team.objects.create(
-                    title=team_name,
-                    country=t.country,
-                    city=team_name,
-                    is_moderated=False,  # False потому что нужно скорректировать город и название
-                )
-
-                api_model_obj = main_api_model.__class__()
-
-                api_model_obj.api_football_id = team_id
-                api_model_obj.content_object = team_obj
-
-                api_model_obj.save()
-
-            if not team_obj.logo:
-                logo_url = team_logo
-                logo_response = requests.get(logo_url, stream=True, timeout=10)
-                if logo_response.status_code == requests.codes.ok:
-                    file_name = logo_url.split("/")[-1]
-                    # Create a temporary file
-                    tmp_file = tempfile.NamedTemporaryFile()
-                    # Read the streamed image in sections
-                    for block in logo_response.iter_content(1024 * 8):
-                        # If no more file then stop
-                        if not block:
-                            break
-                        # Write image block to temporary file
-                        tmp_file.write(block)
-                    # Save the temporary image to the model#
-                    # This saves the model so be sure that it is valid
-                    team_obj.logo.save(file_name, files.File(tmp_file))
+    tasks.async_save_raw_teams.delay(teams_to_save)
+    tasks.async_save_multiple_logos.delay(teams_to_add_logo)
 
     return HttpResponse("Request completed")
 
@@ -317,38 +138,12 @@ def get_teams(request):
 @api_view(["GET"])
 def get_goals_stats(request):
 
-    endpoint = main_api.get_endpoint("get_goals_stats")
-
-    matches = (
-        t_models.Match.main_matches.filter(
-            status=t_models.Match.Statuses.FULL_TIME,
-            goals_stats__isnull=True,
-        )
-        .select_related("main_team", "opponent")
-        .order_by("-id")[:10]
-    )
-
     utils.check_api_requests(MAX_REQUESTS_COUNT)
 
-    for m in matches:
+    matches = t_models.Match.main_matches.get_matches_to_update_stats()
 
-        payload = main_api.get_payload(
-            task="get_goals_stats", match_obj=m, main_api_model=main_api_model
-        )
-
-        response = main_api.send_request(endpoint, payload)
-
-        if response["errors"]:
-            return HttpResponse("Response Errors: please check the logs for details")
-
-        utils.increase_api_requests_count()
-
-        goals = api_parser.parse_goals(response)
-
-        goals_stats = api_parser.get_goals_stats(goals)
-
-        m.goals_stats = goals_stats
-        m.save()
+    matches_stats = api_tools.request_stats_for_matches(matches)
+    t_models.Match.update_goals_stats_for_matches(matches_stats)
 
     logger.info("get_goals_stats request has been completed")
     return HttpResponse("Request has been completed")
