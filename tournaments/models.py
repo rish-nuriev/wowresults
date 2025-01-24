@@ -1,4 +1,7 @@
+from __future__ import annotations
+from datetime import datetime
 import logging
+from typing import Any, Optional, Self, TypeVar
 from django.conf import settings
 from django.urls import reverse
 from django.utils.text import slugify
@@ -29,7 +32,7 @@ class ApiFootballID(models.Model):
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey("content_type", "object_id")
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.api_football_id} - ({self.content_type}) - {self.content_object}"
 
     class Meta:
@@ -41,46 +44,49 @@ class ApiFootballID(models.Model):
         verbose_name_plural = "Соответствие APIFootball"
 
     @classmethod
-    def get_team_by_api_id(cls, team_id_from_api):
+    def get_team_by_api_id(cls, team_id_from_api: int) -> Team | None:
         team_ct = ContentType.objects.get_for_model(Team)
         api_obj = cls.objects.filter(
             content_type=team_ct, api_football_id=team_id_from_api
         ).first()
-        team = None
+        team: Optional[Team] = None
 
         if not api_obj:
-            warning_msg = f"get_team_by_api_id method: {api_obj} is missing for team_id_from_api-{team_id_from_api}"
+            warning_msg = f"get_team_by_api_id method: {api_obj} \
+                           is missing for team_id_from_api-{team_id_from_api}"
             logger.warning(warning_msg)
         else:
             team = api_obj.content_object
         return team
 
     @classmethod
-    def get_tournament_api_obj_by_tournament(cls, tournament):
+    def get_tournament_api_obj_by_tournament(
+        cls, tournament: Tournament
+    ) -> Self | None:
         tournament_ct = ContentType.objects.get_for_model(Tournament)
         return cls.objects.filter(
             content_type=tournament_ct, object_id=tournament.id
         ).first()
 
     @classmethod
-    def get_match_record(cls, match_id):
+    def get_match_record(cls, match_id: int) -> Self | None:
         match_ct = ContentType.objects.get_for_model(Match)
         return cls.objects.filter(
             content_type=match_ct, api_football_id=match_id
         ).first()
 
     @classmethod
-    def get_api_match_record_by_match_obj(cls, match_obj):
+    def get_api_match_record_by_match_obj(cls, match_obj: Match) -> Self | None:
         match_ct = ContentType.objects.get_for_model(Match)
         return cls.objects.filter(content_type=match_ct, object_id=match_obj.id).first()
 
     @classmethod
-    def get_team_record(cls, team_id):
+    def get_team_record(cls, team_id: int) -> Self | None:
         team_ct = ContentType.objects.get_for_model(Team)
         return cls.objects.filter(content_type=team_ct, api_football_id=team_id).first()
 
     @staticmethod
-    def get_tournament_api_season_by_tournament(tournament):
+    def get_tournament_api_season_by_tournament(tournament: Tournament) -> str:
         return tournament.season.split("-")[0]
 
 
@@ -88,7 +94,10 @@ class ApiModelMixin:
     main_api_model = globals()[settings.MAIN_API_MODEL]()
 
 
-class MainMatchesManager(models.Manager):
+M = TypeVar("M", bound=models.Model)
+
+
+class MainMatchesManager(models.Manager[M]):
     """
     Кастомный менеджер для модели Match.
     Возвращает по умолчанию только матчи сыгранные дома (главные).
@@ -98,7 +107,7 @@ class MainMatchesManager(models.Manager):
     второй - для команды на выезде
     """
 
-    def get_queryset(self):
+    def get_queryset(self) -> models.QuerySet[M]:
         return (
             super()
             .get_queryset()
@@ -106,11 +115,11 @@ class MainMatchesManager(models.Manager):
             .filter(at_home=True)
         )
 
-    def get_matches_by_date(self, date):
+    def get_matches_by_date(self, date: datetime) -> models.QuerySet[M]:
         """Выборка матчей на определенную дату"""
         return self.get_queryset().filter(date__date=date)
 
-    def get_matches_to_update_stats(self):
+    def get_matches_to_update_stats(self) -> models.QuerySet[M]:
         """Выборка 10 завершившихся матчей с незаполненной статистикой"""
         return (
             self.get_queryset()
@@ -123,16 +132,18 @@ class MainMatchesManager(models.Manager):
         )
 
 
-class RegularTournamentsManager(models.Manager):
+class RegularTournamentsManager(models.Manager[M]):
     """
     Кастомный менеджер для модели Tournament.
     Возвращает по умолчанию только регулярные турниры (Чемпионаты).
     """
 
-    def get_queryset(self):
+    def get_queryset(self) -> models.QuerySet[M]:
         return super().get_queryset().filter(is_regular=True)
 
-    def get_tournaments_by_season(self, season, current=True):
+    def get_tournaments_by_season(
+        self, season: str, current: bool = True
+    ) -> models.QuerySet[M]:
         """
         Выборка турниров по сезону.
         current=True вернет именно действующие турниры
@@ -175,13 +186,13 @@ class Tournament(models.Model):
     objects = models.Manager()
     reg_objects = RegularTournamentsManager()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.title} - {self.season}"
 
-    def get_absolute_url(self):
+    def get_absolute_url(self) -> str:
         return reverse("tournament", kwargs={"t_slug": self.slug})
 
-    def get_articles_url(self):
+    def get_articles_url(self) -> str:
         return reverse("articles:articles_by_tournament", kwargs={"t_slug": self.slug})
 
 
@@ -193,7 +204,7 @@ class Country(models.Model):
         verbose_name = "Страна"
         verbose_name_plural = "Страны"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.title
 
 
@@ -224,17 +235,16 @@ class Team(models.Model):
         verbose_name_plural = "Команды"
         ordering = ["title"]
 
-    def save(self, *args, **kwargs):
+    def save(self, *args, **kwargs):  # type: ignore
         if not self.slug:
             self.slug = slugify(self.title)
         super().save(*args, **kwargs)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.title
 
     @classmethod
-    def save_raw_teams(cls, teams):
-        print('SAVE_RAW')
+    def save_raw_teams(cls, teams: list[tuple[int, str, int, str]]) -> None:
         for team_id, team_name, country_id, team_logo in teams:
             team_obj = cls.objects.create(
                 temporary_team_id=team_id,
@@ -247,12 +257,11 @@ class Team(models.Model):
                 team_obj.save_logo(team_logo)
 
     @classmethod
-    def save_multiple_logos(cls, teams) -> None:
+    def save_multiple_logos(cls, teams: list[tuple[Team, str]]) -> None:
         for team_obj, team_logo in teams:
             team_obj.save_logo(team_logo)
 
     def save_logo(self, logo_url: str) -> None:
-        print('SAVING')
         logo_data = image_tools.download_logo(logo_url)
         if logo_data:
             file_name, file = logo_data
@@ -364,10 +373,10 @@ class Match(models.Model, ApiModelMixin):
     objects = models.Manager()
     main_matches = MainMatchesManager()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.main_team.title} - {self.opponent.title}"
 
-    def get_absolute_url(self):
+    def get_absolute_url(self) -> str:
         return reverse(
             "match",
             kwargs={
@@ -377,28 +386,32 @@ class Match(models.Model, ApiModelMixin):
             },
         )
 
-    def update_goals_stats(self, goals_stats):
+    def update_goals_stats(self, goals_stats: dict[int, dict[str, str]]) -> None:
         self.goals_stats = goals_stats
         self.save()
 
     @classmethod
-    def update_goals_stats_for_matches(cls, matches: dict):
+    def update_goals_stats_for_matches(
+        cls, matches: dict[int, dict[int, dict[str, str]]]
+    ) -> None:
         for match_id, goals_stats in matches.items():
             match_to_update = cls.objects.get(pk=match_id)
             match_to_update.update_goals_stats(goals_stats)
 
     @classmethod
-    def get_statuses_as_dict(cls):
+    def get_statuses_as_dict(cls) -> dict[str, str]:
         return dict(cls.Statuses.choices)
 
     @classmethod
-    def create_or_update_match(cls, team1, team2, match_data):
+    def create_or_update_match(
+        cls, team1: Team, team2: Team, match_data: dict[str, Any]
+    ) -> None:
         """
         После того как из АПИ получили и обработали данные о матче
         можем либо обновить данные либо создать новый матч
-        team1 - принимающая команда - объект Team
-        team2 - гостевая команда - объект Team
-        match_data - все обязательные поля модели Match
+        :param team1: - принимающая команда - объект Team
+        :param team2: - гостевая команда - объект Team
+        :param match_data: - все обязательные поля модели Match
         match_data["match_id"] - это id матча из АПИ
         через него модель Match связывается с моделью АПИ
         """
@@ -441,7 +454,9 @@ class Match(models.Model, ApiModelMixin):
             m.save()
 
     @classmethod
-    def save_prepared_matches(cls, matches: list[tuple]):
+    def save_prepared_matches(
+        cls, matches: list[tuple[Team, Team, dict[str, str]]]
+    ) -> None:
         for team1, team2, match_data in matches:
             cls.create_or_update_match(team1, team2, match_data)
 
@@ -456,7 +471,7 @@ class Stage(models.Model):
         verbose_name = "Стадия турнира"
         verbose_name_plural = "Стадии турнира"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.title
 
 
