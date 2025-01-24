@@ -1,5 +1,5 @@
 import os
-from celery import Celery
+from celery import Celery # type: ignore
 
 # задать стандартный модуль настроек Django
 # для программы 'celery'.
