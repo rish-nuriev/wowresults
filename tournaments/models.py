@@ -1,7 +1,8 @@
 from __future__ import annotations
 from datetime import datetime
 import logging
-from typing import Any, Optional, Self, TypeVar
+from typing import Any, Optional, TypeVar
+from typing_extensions import Self
 from django.conf import settings
 from django.urls import reverse
 from django.utils.text import slugify
