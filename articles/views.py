@@ -1,14 +1,20 @@
 from django.conf import settings
+from django.db import connection
+from django.db.models import Q
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, render
+from django.core.paginator import Paginator
 from django.utils import dateformat
 from django.utils.text import slugify
 from django.views.generic import DetailView, ListView
+from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank
+
 from articles.helpers import gen_match_text
 from articles.models import Article, TranslitTag
 
 from tournaments.models import Match
+from .forms import SearchForm
 
 
 def translit_to_eng(s: str) -> str:
@@ -174,3 +180,43 @@ class ArticlesByTournament(ListView):
         context["tournament"] = tournament
         context.update(kwargs)
         return context
+
+
+def post_search(request):
+    """
+    Метод реализующий поиск по статьям.
+    Если в качестве движка БД используется postgresql
+    применяется полнотекстовый поисковый движок иначе
+    вхождение поискового запроса в заголовок 
+    либо текст статьи.
+    """
+    form = SearchForm()
+    query = None
+    posts = []
+    if "query" in request.GET:
+        form = SearchForm(request.GET)
+        if form.is_valid():
+            query = form.cleaned_data["query"]
+            if connection.vendor == "postgresql":
+                search_vector = SearchVector("title", "content", config="russian")
+                search_query = SearchQuery(query, config="russian")
+                posts_list = (
+                    Article.published.annotate(
+                        search=search_vector,
+                        rank=SearchRank(search_vector, search_query),
+                    )
+                    .filter(search=search_query)
+                    .order_by("-rank")
+                )
+            else:
+                posts_list = Article.published.filter(
+                    Q(title__icontains=query) | Q(content__icontains=query)
+                )
+            paginator = Paginator(posts_list, 5)
+            page_number = request.GET.get("page", 1)
+            posts = paginator.page(page_number)
+    return render(
+        request,
+        "articles/list.html",
+        {"paginator": paginator, "query": query, "posts": posts},
+    )

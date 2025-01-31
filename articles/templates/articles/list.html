@@ -7,6 +7,10 @@
 <div class="row posts-entry">
     <div class="col-lg-8">
 
+      {% if query %}
+          <p class="search-results">Результаты поиска по запросу <b>{{query}}</b> ({{ paginator.count }})</p><br>
+      {% endif %}
+
       {% for post in posts  %}
       <div class="blog-entry d-flex blog-entry-search-item">
         <div class="post-list-img">
@@ -35,7 +39,7 @@
       <div class="row text-start pt-5 border-top">
         <div class="col-md-12">
 
-          {% include "pagination.html" with page=page_obj %}
+          {% include "pagination.html" with page_obj=posts %}
           
         </div>
       </div>
