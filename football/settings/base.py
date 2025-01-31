@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
     "django_extensions",
     "debug_toolbar",
+    "django.contrib.postgres",
 ]
 
 REST_FRAMEWORK = {
