@@ -1,7 +1,8 @@
 from django import template
+from django.db import connection
 from django.db.models import CharField, Sum, Count, IntegerField
 from django.db.models.functions import Cast
-# from django.contrib.postgres.aggregates.general import StringAgg # при использовании PostgreSQL
+from django.contrib.postgres.aggregates.general import StringAgg
 from django.db.models import Aggregate
 
 from tournaments.models import Match
@@ -25,19 +26,35 @@ register = template.Library()
 
 @register.inclusion_tag("tournaments/table.html")
 def show_table(tournament, tour=0, date=None):
+    """
+    Тег отрисовывает таблицу с результатами.
+    По наименованию команды группируются все матчи.
+    Суммируется кол-во матчей, набранные очки,
+    забитые и пропущенные мячи, их разница.
+    Запрос сортируется по кол-ву очков, потом разнице мячей,
+    потом по кол-ву забитых мячей.
+    Строка результатов аггрегируется в виде 'WDLWWL'
+    в соответствии со статусами Match.ResultVals
+    Затем в темплейте высчитывается кол-во побед, ничей и поражений.
+    Функция аггрегации результатов выбирается в зависимости 
+    от движка базы данных.
+    """
+    if connection.vendor == "postgresql":
+        aggregation = StringAgg
+    else:
+        aggregation = Concat
     q = (
         Match.objects.select_related("Tournament")
         .values("main_team__title")
         .filter(tournament=tournament, status=Match.Statuses.FULL_TIME)
     )
-    # tournament = Tournament.objects.prefetch_related('events').get(slug=t_slug)
     if tour:
         q = q.filter(tour__lte=tour)
     if date:
         q = q.filter(date__lte=date)
     matches = (
         q.annotate(
-            results=Concat("result", delimiter=""),
+            results=aggregation("result", delimiter=""),
             cnt=Count("id"),
             points=Sum("points_received"),
             goals_scored=Sum("goals_scored"),
