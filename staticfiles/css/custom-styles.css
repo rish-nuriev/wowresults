@@ -76,9 +76,14 @@ body .site-nav {
 }
 
 .heading-left {
-    width: 80%; float: left
+    width: 80%; 
+    float: left;
+    margin-left: 10%;
 }
 
 .auth-block {
-    float: right; border: solid white 3px; cursor: pointer; padding: 10px;
+    float: right; 
+    border: solid white 3px; 
+    cursor: pointer; 
+    padding: 10px;
 }
