@@ -39,7 +39,11 @@
       <div class="row text-start pt-5 border-top">
         <div class="col-md-12">
 
-          {% include "pagination.html" with page_obj=posts %}
+          {% if cbv %}
+            {% include "pagination.html" %}
+          {% else %}
+            {% include "pagination.html" with page_obj=posts %}
+          {% endif %}
           
         </div>
       </div>

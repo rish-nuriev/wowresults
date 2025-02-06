@@ -1,3 +1,7 @@
+html, body {
+    height: 100%;
+}
+
 body .site-nav {
     background-color: #214204;
 }
@@ -86,4 +90,17 @@ body .site-nav {
     border: solid white 3px; 
     cursor: pointer; 
     padding: 10px;
+}
+
+.form-wrapper {
+    margin: 0 auto; 
+    min-height: 100%; 
+    height: auto !important;
+    margin-bottom: 30%;
+    width: 50%; 
+}
+
+.site-footer {
+    width: 100%;
+    bottom: 0;
 }

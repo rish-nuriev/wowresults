@@ -161,6 +161,7 @@ class ArticleListView(ListView):
 
     extra_context = {
         "default_image": settings.DEFAULT_POST_IMAGE,
+        "cbv": True,
     }
 
 
@@ -168,6 +169,7 @@ class ArticlesByTournament(ListView):
     template_name = "articles/list.html"
     context_object_name = "posts"
     allow_empty = False
+    paginate_by = 5
 
     def get_queryset(self):
         return Article.published.filter(
@@ -178,6 +180,7 @@ class ArticlesByTournament(ListView):
         context = super().get_context_data(**kwargs)
         tournament = context["posts"][0].tournament
         context["tournament"] = tournament
+        context["cbv"] = True
         context.update(kwargs)
         return context
 
