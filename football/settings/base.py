@@ -143,7 +143,9 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_POST_IMAGE = MEDIA_URL + "images/default.jpg"
 
-LOGIN_URL = "/admin/login/"
+LOGIN_REDIRECT_URL = 'dashboard'
+LOGIN_URL = 'login'
+LOGOUT_URL = 'logout'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field

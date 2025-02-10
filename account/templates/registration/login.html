@@ -9,11 +9,19 @@
 {% block content %}
     <div class="row form-wrapper" data-aos="fade-up" data-aos-delay="200">
 
-        <p>Используйте форму ниже для входа:</p>
+        {% if form.errors %}
+            <p>
+            Неверный логин или пароль,
+            пожалуйста попробуйте ещ раз
+            </p>
+        {% else %}
+            <p>Используйте форму ниже для входа:</p>
+        {% endif %}
 
         <form method="post">
             {{ form.as_p }}
             {% csrf_token %}
+            <input type="hidden" name="next" value="{{ next }}" />
             <p><input type="submit" value="Log in"></p>
         </form>
 

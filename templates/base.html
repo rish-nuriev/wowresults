@@ -51,9 +51,24 @@
                 {% endblock heading %}
               </h1>
             </div>
-            <div class="auth-block">
-              <a href="{% url "login" %}" style="font-size: 15px; font-weight: bold; color: white">Логин</a>
-            </div>
+
+              {% if request.user.is_authenticated %}
+                <div class="auth-block">
+                  <a href="{% url "dashboard" %}" style="">Кабинет</a>
+                </div>
+                <div class="auth-block logout">
+                  <form method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button type="submit">Выйти</button>
+                  </form>
+                </div>
+              {% else %}
+                <div class="auth-block">
+                  <a href="{% url "login" %}">Логин</a>
+                </div>
+              {% endif %}
+
+            </.div>
           </div>
         </div>
       </div>
