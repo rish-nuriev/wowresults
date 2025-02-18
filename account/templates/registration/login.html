@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %} Вход на сайт {% endblock title %}
+
+{% block heading %}
+    Вход на сайт
+{% endblock heading %}
+
+{% block content %}
+    <div class="row form-wrapper" data-aos="fade-up" data-aos-delay="200">
+
+        {% if form.errors %}
+            <p>
+            Неверный логин или пароль,
+            пожалуйста попробуйте ещ раз
+            </p>
+        {% else %}
+            <p>Используйте форму ниже для входа:</p>
+        {% endif %}
+
+        <form method="post">
+            {{ form.as_p }}
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ next }}" />
+            <p><input type="submit" class="btn btn-primary" value="Войти"></p>
+        </form>
+
+        <p>
+            <a href="{% url "password_reset" %}">
+            Забыли пароль?
+            </a>
+        </p>
+
+        {% comment %} <form action="#">
+            <div class="row">
+                <div class="col-6 mb-3">
+                    <input type="text" class="form-control" placeholder="Your Name">
+                </div>
+                <div class="col-6 mb-3">
+                    <input type="email" class="form-control" placeholder="Your Email">
+                </div>
+                <div class="col-12 mb-3">
+                    <input type="text" class="form-control" placeholder="Subject">
+                </div>
+                <div class="col-12 mb-3">
+                    <textarea name="" id="" cols="30" rows="7" class="form-control" placeholder="Message"></textarea>
+                </div>
+
+                <div class="col-12">
+                    <input type="submit" value="Send Message" class="btn btn-primary">
+                </div>
+            </div>
+        </form> {% endcomment %}
+    </div>
+{% endblock content %}

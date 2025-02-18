@@ -26,6 +26,7 @@ from tournaments.views import page_not_found
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("account/", include('account.urls')),
     path("__debug__/", include("debug_toolbar.urls")),
     path("", include("articles.urls")),
     path("tournament/", include("tournaments.urls")),

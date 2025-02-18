@@ -30,6 +30,7 @@ ALLOWED_HOSTS = ["127.0.0.1", "localhost", "rish333.pythonanywhere.com"]
 
 # Application definition
 INSTALLED_APPS = [
+    "account",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -142,7 +143,9 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_POST_IMAGE = MEDIA_URL + "images/default.jpg"
 
-LOGIN_URL = "/admin/login/"
+LOGIN_REDIRECT_URL = 'dashboard'
+LOGIN_URL = 'login'
+LOGOUT_URL = 'logout'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
