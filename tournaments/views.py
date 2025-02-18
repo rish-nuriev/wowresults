@@ -142,7 +142,14 @@ def get_goals_stats(request):
 
     matches = t_models.Match.main_matches.get_matches_to_update_stats()
 
+    if not matches:
+        return HttpResponse("No matches to update goals stats")
+
     matches_stats = api_tools.request_stats_for_matches(matches)
+
+    if matches_stats is None:
+        return HttpResponse("Response Errors: please check the logs for details")
+
     t_models.Match.update_goals_stats_for_matches(matches_stats)
 
     logger.info("get_goals_stats request has been completed")

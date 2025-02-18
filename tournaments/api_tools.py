@@ -124,7 +124,7 @@ def request_stats_for_matches(matches):
         utils.increase_api_requests_count()
 
         if response["errors"]:
-            return HttpResponse("Response Errors: please check the logs for details")
+            return None
 
         goals = api_parser.parse_goals(response)
         goals_stats = api_parser.get_goals_stats(goals)
