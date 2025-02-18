@@ -1,6 +1,11 @@
 from django import forms
+from django.contrib.auth import password_validation
 from django.contrib.auth.models import User
-from django.contrib.auth.forms import AuthenticationForm, PasswordResetForm
+from django.contrib.auth.forms import (
+    AuthenticationForm,
+    PasswordResetForm,
+    SetPasswordForm,
+)
 from account.tasks import send_mail
 
 
@@ -39,6 +44,24 @@ class PrettyPasswordResetForm(PasswordResetForm):
             to_email=to_email,
             html_email_template_name=html_email_template_name,
         )
+
+
+class PrettySetPasswordForm(SetPasswordForm):
+    new_password1 = forms.CharField(
+        label="Новый пароль",
+        widget=forms.PasswordInput(
+            attrs={"autocomplete": "new-password", "class": "form-control"}
+        ),
+        strip=False,
+        help_text=password_validation.password_validators_help_text_html(),
+    )
+    new_password2 = forms.CharField(
+        label="Подтверждение нового пароля",
+        strip=False,
+        widget=forms.PasswordInput(
+            attrs={"autocomplete": "new-password", "class": "form-control"}
+        ),
+    )
 
 
 class UserRegistrationForm(forms.ModelForm):
