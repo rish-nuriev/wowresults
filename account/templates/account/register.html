@@ -3,13 +3,15 @@
   Создать аккаунт
 {% endblock %}
 {% block content %}
+<div class="form-wrapper">
   <h1>Создать аккаунт</h1>
   <p>Пожалуйста, зарегистрируйтесь используя форму ниже:</p>
   <form method="post">
     {{ user_form.as_p }}
     {% csrf_token %}
     <p>
-      <input type="submit" value="Создать аккаунт"/>
+      <input type="submit" class="btn btn-primary" value="Создать аккаунт"/>
     </p>
   </form>
+</div>
 {% endblock %}
