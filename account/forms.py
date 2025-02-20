@@ -72,6 +72,7 @@ class UserRegistrationForm(forms.ModelForm):
             attrs={"autocomplete": "email", "class": "form-control"}
         ),
     )
+
     password = forms.CharField(
         label="Пароль", widget=forms.PasswordInput(attrs={"class": "form-control"})
     )
@@ -92,3 +93,9 @@ class UserRegistrationForm(forms.ModelForm):
         if cd["password"] != cd["password2"]:
             raise forms.ValidationError("Пароли не совпадают")
         return cd["password2"]
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if email and User.objects.filter(email=email).exists():
+            raise forms.ValidationError('Пользователь с данным Email уже зарегистрирован')
+        return email
