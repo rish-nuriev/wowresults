@@ -1,0 +1,11 @@
+{% block title %}
+    <title>Подтверждение Email</title>
+{% endblock title %}
+
+{% block content %}
+    {% if success %}
+        {{ user.username }}, ваш Email подтвержден!
+    {% else %}
+        Ошибка, неверный токен!
+    {% endif %}
+{% endblock content %}

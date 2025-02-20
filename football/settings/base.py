@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "django_extensions",
     "debug_toolbar",
     "django.contrib.postgres",
+    "django_email_verification",
 ]
 
 REST_FRAMEWORK = {
@@ -162,6 +163,20 @@ ADMIN_EMAIL = "nuriev_rishat@mail.ru"
 WORKING_EMAIL = "nuriev_rishat@mail.ru"
 ADMINS = [("Rishat", "nuriev_rishat@mail.ru")]
 MANAGERS = [("Rishat", "nuriev_rishat@mail.ru")]
+
+# Конфигурация сервера электронной почты
+def verified_callback(user):
+    user.is_active = True
+
+EMAIL_MAIL_CALLBACK  = verified_callback
+EMAIL_FROM_ADDRESS = 'nuriev_rishat@mail.ru'
+EMAIL_MAIL_SUBJECT = 'Подтвердите ваш Email {{ user.username }}'
+EMAIL_MAIL_HTML = 'registration/mail_body.html'
+EMAIL_MAIL_PLAIN = 'registration/mail_body.txt'
+EMAIL_MAIL_TOKEN_LIFE = 60 * 60
+EMAIL_MAIL_PAGE_TEMPLATE = 'registration/confirm_template.html'
+EMAIL_PAGE_DOMAIN = 'http://127.0.0.1:8000/' # Host
+# EMAIL_MULTI_USER = True  # optional (defaults to False)
 
 # Конфигурация сервера электронной почты
 EMAIL_HOST = config("EMAIL_HOST")
