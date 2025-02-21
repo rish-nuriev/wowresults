@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     "debug_toolbar",
     "django.contrib.postgres",
     "django_email_verification",
+    "django_bootstrap5",
 ]
 
 REST_FRAMEWORK = {

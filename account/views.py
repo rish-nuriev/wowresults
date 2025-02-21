@@ -1,6 +1,7 @@
 from django_email_verification import send_email
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.urls import reverse
@@ -25,6 +26,8 @@ def register(request):
             # пока не пройдет проверку по Email
             user.is_active = False
             send_email(user)
+            messages.success(request, f'Письмо с инструкцией по активации \
+                                        отправлено на {user_email}')
 
             return HttpResponseRedirect(reverse("login"))
 

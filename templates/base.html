@@ -1,5 +1,7 @@
 {% load static %}
 
+{% load django_bootstrap5 %}
+
 {% load menu %}
 
 <!doctype html>
@@ -8,6 +10,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="author" content="Untree.co">
+
+
+
   <link rel="shortcut icon" href="favicon.png">
 
   <meta name="description" content="" />
@@ -31,7 +36,6 @@
   <link rel="stylesheet" href="{% static 'css/flatpickr.min.css' %}">
 
   <link rel="stylesheet" href="{% static 'css/custom-styles.css' %}">
-
 
   <title>{% block title %} WOW Results - Результаты футбольных матчей {% endblock title %}</title>
 </head>
@@ -77,6 +81,8 @@
 
 <div class="section search-result-wrap">
     <div class="container">        
+
+    {% bootstrap_messages %}
 
     {% block content %}
     

@@ -1,11 +1,20 @@
+{% extends "base.html" %}
+
 {% block title %}
     <title>Подтверждение Email</title>
 {% endblock title %}
 
 {% block content %}
+<div class="form-wrapper">
     {% if success %}
-        {{ user.username }}, ваш Email подтвержден!
+    <p>
+        {{ user.username }}, ваш Email подтвержден!<br>
+        Вы можете <a href="{% url "login" %}">авторизоваться</a>
+    </p>
     {% else %}
+    <p>
         Ошибка, неверный токен!
+    </p>
     {% endif %}
+</div>
 {% endblock content %}
