@@ -22,8 +22,13 @@
             {{ form.as_p }}
             {% csrf_token %}
             <input type="hidden" name="next" value="{{ next }}" />
-            <p><input type="submit" class="btn btn-primary" value="Войти"></p>
+            <p>
+                <input type="submit" class="btn btn-primary" value="Войти">
+                Если у вас еще нет аккаунта, вы можете
+                <a href="{% url "register" %}">зарегистрироваться</a>.
+            </p>
         </form>
+
 
         <p>
             <a href="{% url "password_reset" %}">
