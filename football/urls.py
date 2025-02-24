@@ -19,6 +19,7 @@ from django.conf import settings
 from django.contrib import admin
 from django.urls import include, path
 from django.conf.urls.static import static
+from django_email_verification import urls as email_urls
 
 from rest_framework_simplejwt import views as jwt_views
 from tournaments.views import page_not_found
@@ -26,6 +27,7 @@ from tournaments.views import page_not_found
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path('verify/', include(email_urls), name='email-verification'),
     path("account/", include('account.urls')),
     path("__debug__/", include("debug_toolbar.urls")),
     path("", include("articles.urls")),

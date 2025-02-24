@@ -65,6 +65,14 @@ class PrettySetPasswordForm(SetPasswordForm):
 
 
 class UserRegistrationForm(forms.ModelForm):
+    email = forms.EmailField(
+        label="Email",
+        max_length=254,
+        widget=forms.EmailInput(
+            attrs={"autocomplete": "email", "class": "form-control"}
+        ),
+    )
+
     password = forms.CharField(
         label="Пароль", widget=forms.PasswordInput(attrs={"class": "form-control"})
     )
@@ -75,11 +83,9 @@ class UserRegistrationForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ["username", "first_name", "email"]
+        fields = ["username"]
         widgets = {
             "username": forms.TextInput(attrs={"class": "form-control"}),
-            "first_name": forms.TextInput(attrs={"class": "form-control"}),
-            "email": forms.EmailInput(attrs={"class": "form-control"}),
         }
 
     def clean_password2(self):
@@ -87,3 +93,9 @@ class UserRegistrationForm(forms.ModelForm):
         if cd["password"] != cd["password2"]:
             raise forms.ValidationError("Пароли не совпадают")
         return cd["password2"]
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if email and User.objects.filter(email=email).exists():
+            raise forms.ValidationError('Пользователь с данным Email уже зарегистрирован')
+        return email
