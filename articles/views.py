@@ -1,20 +1,22 @@
 from django.conf import settings
+from django.contrib import messages
 from django.db import connection
-from django.db.models import Q
+from django.db.models import Q, Prefetch
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.core.paginator import Paginator
 from django.utils import dateformat
 from django.utils.text import slugify
 from django.views.generic import DetailView, ListView
+from django.views.decorators.http import require_POST
 from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank
 
 from articles.helpers import gen_match_text
-from articles.models import Article, TranslitTag
+from articles.models import Article, Comment, TranslitTag
 
 from tournaments.models import Match
-from .forms import SearchForm
+from .forms import CommentForm, SearchForm
 
 
 def translit_to_eng(s: str) -> str:
@@ -138,7 +140,22 @@ class ShowArticle(DetailView):
     context_object_name = "article"
 
     def get_object(self, queryset=None):
-        return get_object_or_404(Article, slug=self.kwargs["article_slug"])
+        # Определяем QuerySet для фильтрации комментариев
+        filtered_comments = Comment.objects.select_related("author").filter(active=True)
+        return get_object_or_404(
+            Article.objects.prefetch_related(
+                Prefetch("comments", queryset=filtered_comments)
+            ),
+            slug=self.kwargs["article_slug"],
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        form = CommentForm()
+        context["form"] = form
+        context["comments"] = form
+        context.update(kwargs)
+        return context
 
 
 class ArticleListView(ListView):
@@ -190,7 +207,7 @@ def post_search(request):
     Метод реализующий поиск по статьям.
     Если в качестве движка БД используется postgresql
     применяется полнотекстовый поисковый движок иначе
-    вхождение поискового запроса в заголовок 
+    вхождение поискового запроса в заголовок
     либо текст статьи.
     """
     form = SearchForm()
@@ -223,3 +240,26 @@ def post_search(request):
         "articles/list.html",
         {"paginator": paginator, "query": query, "posts": posts},
     )
+
+
+@require_POST
+def post_comment(request, article_id):
+    article = get_object_or_404(
+        Article, id=article_id, is_published=Article.Status.PUBLISHED
+    )
+    comment = None
+    # Комментарий был отправлен
+    form = CommentForm(data=request.POST)
+    if form.is_valid():
+        # Создать объект класса Comment, не сохраняя его в базе данных
+        comment = form.save(commit=False)
+        # Назначить статью комментарию
+        comment.article = article
+        # Назначить автора
+        comment.author = request.user
+        # Сохранить комментарий в базе данных
+        comment.save()
+        messages.success(request, "Комментарий успешно добавлен")
+    else:
+        messages.error(request, "Ошибка! Пожалуйста свяжитесь с администратором")
+    return redirect(article)

@@ -17,6 +17,7 @@ class CustomLanguagePack(base.TranslitLanguagePack):
         "Ch": "Ч",
         "sh": "ш",
         "SH": "Ш",
+        "Sh": "Ш",
         "sc": "с",
         "SC": "С",
         "kh": "х",
@@ -38,6 +39,7 @@ class CustomLanguagePack(base.TranslitLanguagePack):
         "zh": "ж",
         "ZH": "Ж",
         "Zh": "Ж",
+        "ñ": "нь",
     }
 
 

@@ -1,0 +1,14 @@
+<div class="form-wrapper">
+  <h2>Добавить комментарий</h2>
+  <form action="{% url 'articles:post_comment' article.id %}" method="post">
+    {{ form.as_p }}
+    {% csrf_token %}
+    <p style="font-size: 20px;">
+    {% if user.is_authenticated %}
+        <input type="submit" class="btn btn-primary" value="Добавить комментарий" />
+    {% else %}
+        <a href="{% url "login" %}?next={{ request.path }}">Авторизуйтесь</a> чтобы оставлять комментарии
+    {% endif %}
+    </p>
+  </form>
+</div>
