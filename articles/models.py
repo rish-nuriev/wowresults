@@ -1,10 +1,10 @@
 import random
+from django.contrib.auth.models import User
 from django.db import models
 from django.urls import reverse
 from django.utils.text import slugify
 from taggit.managers import TaggableManager
 from taggit.models import TagBase, GenericTaggedItemBase
-
 from tournaments.models import Tournament
 
 
@@ -129,3 +129,20 @@ class Article(models.Model):
 
     def get_absolute_url(self):
         return reverse("articles:article", kwargs={"article_slug": self.slug})
+
+
+class Comment(models.Model):
+    article = models.ForeignKey(Article, on_delete=models.CASCADE, related_name="comments")
+    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name="comments")
+    body = models.TextField()
+    created = models.DateTimeField(auto_now_add=True)
+    active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["created"]
+        indexes = [
+            models.Index(fields=["created"]),
+        ]
+
+    def __str__(self):
+        return f"Комментарий от {self.author.username} к {self.article}"

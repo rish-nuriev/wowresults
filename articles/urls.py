@@ -22,4 +22,5 @@ urlpatterns = [
     ),
     path("search/", views.post_search, name="post_search"),
     path("<slug:article_slug>/", views.ShowArticle.as_view(), name="article"),
+    path('<int:article_id>/comment/', views.post_comment, name='post_comment'),
 ]

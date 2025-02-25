@@ -46,6 +46,28 @@
 
     </br></br>
 
+    {% with article.comments.count as total_comments %}
+    <h2>
+    Комментариев: {{ total_comments }} 
+    </h2>
+    {% endwith %}
+
+    {% for comment in article.comments.all %}
+    <div class="comment">
+        <p class="info">
+            Комментарий пользователя {{ comment.author.username }}
+            от {{ comment.created }}
+        </p>
+        {{ comment.body|linebreaks }}
+    </div>
+    {% empty %}
+        <p>Еще нет комментариев.</p>
+    {% endfor %}
+    </br></br>
+
+    {% include "articles/includes/comment_form.html" %}
+
+
     {% show_similar_articles article %}
 
 </div>
