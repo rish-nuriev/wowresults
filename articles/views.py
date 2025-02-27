@@ -12,50 +12,11 @@ from django.views.generic import DetailView, ListView
 from django.views.decorators.http import require_POST
 from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank
 
-from articles.helpers import gen_match_text
+from articles.helpers import gen_match_text, translit_to_eng
 from articles.models import Article, Comment, TranslitTag
 
 from tournaments.models import Match
 from .forms import CommentForm, SearchForm
-
-
-def translit_to_eng(s: str) -> str:
-    d = {
-        "а": "a",
-        "б": "b",
-        "в": "v",
-        "г": "g",
-        "д": "d",
-        "е": "e",
-        "ё": "yo",
-        "ж": "zh",
-        "з": "z",
-        "и": "i",
-        "к": "k",
-        "л": "l",
-        "м": "m",
-        "н": "n",
-        "о": "o",
-        "п": "p",
-        "р": "r",
-        "с": "s",
-        "т": "t",
-        "у": "u",
-        "ф": "f",
-        "х": "h",
-        "ц": "c",
-        "ч": "ch",
-        "ш": "sh",
-        "щ": "shch",
-        "ь": "",
-        "ы": "y",
-        "ъ": "",
-        "э": "r",
-        "ю": "yu",
-        "я": "ya",
-    }
-
-    return "".join(map(lambda x: d[x] if d.get(x, False) else x, s.lower()))
 
 
 @login_required
