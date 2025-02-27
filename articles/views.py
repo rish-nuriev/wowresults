@@ -3,7 +3,6 @@ from django.contrib import messages
 from django.db import connection
 from django.db.models import Q, Prefetch
 from django.http import HttpResponse
-from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.core.paginator import Paginator
 from django.utils import dateformat
@@ -11,6 +10,7 @@ from django.utils.text import slugify
 from django.views.generic import DetailView, ListView
 from django.views.decorators.http import require_POST
 from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank
+from django.contrib.admin.views.decorators import staff_member_required
 
 from articles.helpers import gen_match_text, translit_to_eng
 from articles.models import Article, Comment, TranslitTag
@@ -19,7 +19,7 @@ from tournaments.models import Match
 from .forms import CommentForm, SearchForm
 
 
-@login_required
+@staff_member_required
 def create(request, match_day):
     tournaments_to_process = (
         Match.main_matches.values(
