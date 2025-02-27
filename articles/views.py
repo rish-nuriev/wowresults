@@ -1,3 +1,4 @@
+import logging
 from django.conf import settings
 from django.contrib import messages
 from django.db import connection
@@ -5,19 +6,26 @@ from django.db.models import Q, Prefetch
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.core.paginator import Paginator
-from django.utils import dateformat
 from django.utils.text import slugify
 from django.views.generic import DetailView, ListView
 from django.views.decorators.http import require_POST
 from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank
 from django.contrib.admin.views.decorators import staff_member_required
 
-from articles.helpers import gen_match_text, translit_to_eng
+from articles.tools import (
+    ArticleGenerationError,
+    generate_article_tags,
+    generate_content_from_template,
+    generate_title,
+    get_nice_formatted_date,
+)
+from articles.helpers import translit_to_eng
 from articles.models import Article, Comment, TranslitTag
 
 from tournaments.models import Match
 from .forms import CommentForm, SearchForm
 
+logger = logging.getLogger("basic_logger")
 
 @staff_member_required
 def create(request, match_day):
@@ -30,50 +38,26 @@ def create(request, match_day):
     )
 
     for tournament in tournaments_to_process:
-        matches = Match.main_matches.filter(
+        # сразу преобразуем QuerySet в список чтобы
+        # избежать повторных запросов в бд
+        matches = list(Match.main_matches.filter(
             tournament=tournament["tournament__id"],
             status=Match.Statuses.FULL_TIME,
             date__contains=match_day,
-        )
-        nice_date = dateformat.format(match_day, settings.DATE_FORMAT)
-        title = f'Результаты матчей: {tournament["tournament__title"]} {tournament["tournament__season"]} - {nice_date}'
+        ))
 
-        content = '<div class="article_wrapper">'
-        content += f'<div class="results_description">{nice_date} '
-
-        tags = []
-
-        for match in matches:
-            tags.extend([match.main_team.title, match.opponent.title])
-            content += gen_match_text(
-                match.main_team,
-                match.opponent,
-                match.result,
-                match.goals_scored,
-                match.goals_conceded,
+        nice_date = get_nice_formatted_date(match_day)
+        title = generate_title(nice_date, tournament)
+        try:
+            content = generate_content_from_template(
+                "custom_templates/article_text.html", nice_date, matches
             )
+        except ArticleGenerationError as e:
+            logger.error(e)
+            return HttpResponse("Errors during articles generation. \
+                                 Please check the logs")
 
-        tags.extend(
-            [
-                tournament["tournament__title"],
-                f"матчи {nice_date}",
-                f'{tournament["tournament__title"]} {tournament["tournament__season"]} {match.tour} тур',
-            ]
-        )
-
-        content += "</div>"
-        content += (
-            "<h3>Предлагаем вашему вниманию результаты завершившихся матчей:</h3>"
-        )
-
-        content += "<ul>"
-        for match in matches:
-            content += f"<li><a href='{ match.get_absolute_url() }'>{ match.main_team }-{ match.opponent } : { match.goals_scored } - { match.goals_conceded }</a></li>"
-        content += "</ul>"
-
-        content += "<p>Текст статьи обновляется</p>"
-
-        content += "</div>"
+        tags = generate_article_tags(nice_date, matches, tournament)
 
         slug = slugify(translit_to_eng(title))
 
@@ -86,12 +70,15 @@ def create(request, match_day):
             "is_published": True,
         }
 
+        # На данный момент просто сохраняю статью,
+        # хотя вариант с обновлением статьи также работает,
+        # просто решил не дергать бд каждый раз
+        # но возможно потребуется включить подготовив create_defaults
+        # Article.objects.update_or_create(slug=slug, defaults=defaults, create_defaults=create_defaults)
         article, created = Article.objects.get_or_create(slug=slug, defaults=defaults)
         for tag in tags:
             article.tags.add(tag)
         article.save()
-
-        # Article.objects.update_or_create(slug=slug, defaults=defaults, create_defaults=create_defaults)
 
     return HttpResponse(f"All the articles for {match_day} have been created/updated")
 
