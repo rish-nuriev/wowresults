@@ -13,7 +13,8 @@ from rest_framework.decorators import (
     api_view,
 )
 
-from tournaments import api_tools, tasks
+from tournaments import tasks
+from tournaments.tools import api_tools
 import tournaments.models as t_models
 
 

@@ -11,7 +11,7 @@ from django.db import models
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 
-from tournaments import image_tools
+from tournaments.tools import image_tools
 
 
 logger = logging.getLogger("basic_logger")

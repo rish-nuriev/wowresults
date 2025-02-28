@@ -2,9 +2,10 @@ import logging
 from django.conf import settings
 from django.http import HttpResponse
 from tournaments.api_list.api_parsers import ApiParserError, ApiParsersContainer
-from tournaments import models, redis_tools
+from tournaments import models
 from tournaments.tasks import async_error_logging
 import tournaments.api_list.api_classes as api_source
+from tournaments.tools import redis_tools
 
 
 main_api = getattr(api_source, settings.MAIN_API)()
