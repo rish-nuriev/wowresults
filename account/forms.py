@@ -6,7 +6,7 @@ from django.contrib.auth.forms import (
     PasswordResetForm,
     SetPasswordForm,
 )
-from account.tasks import send_mail
+from account.tasks import send_password_reset_mail
 
 
 class PrettyAuthenticationForm(AuthenticationForm):
@@ -36,7 +36,7 @@ class PrettyPasswordResetForm(PasswordResetForm):
     ):
         context["user"] = context["user"].id
 
-        send_mail.delay(
+        send_password_reset_mail.delay(
             subject_template_name=subject_template_name,
             email_template_name=email_template_name,
             context=context,
