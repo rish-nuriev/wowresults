@@ -17,18 +17,29 @@ Including another URLconf
 
 from django.conf import settings
 from django.contrib import admin
+from django.contrib.sitemaps.views import sitemap
 from django.urls import include, path
 from django.conf.urls.static import static
 from django_email_verification import urls as email_urls
 
 from rest_framework_simplejwt import views as jwt_views
 from tournaments.views import page_not_found
+from articles.sitemaps import PostSitemap
 
+sitemaps = {
+    "posts": PostSitemap,
+}
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path('verify/', include(email_urls), name='email-verification'),
-    path("account/", include('account.urls')),
+    path(
+        "sitemap.xml",
+        sitemap,
+        {"sitemaps": sitemaps},
+        name="django.contrib.sitemaps.views.sitemap",
+    ),
+    path("verify/", include(email_urls), name="email-verification"),
+    path("account/", include("account.urls")),
     path("__debug__/", include("debug_toolbar.urls")),
     path("", include("articles.urls")),
     path("tournament/", include("tournaments.urls")),
@@ -38,7 +49,7 @@ urlpatterns = [
     path(
         "api/token/refresh/", jwt_views.TokenRefreshView.as_view(), name="token_refresh"
     ),
-    path("api/token/verify/", jwt_views.TokenVerifyView.as_view(), name='token_verify'),
+    path("api/token/verify/", jwt_views.TokenVerifyView.as_view(), name="token_verify"),
 ]
 
 if settings.DEBUG:

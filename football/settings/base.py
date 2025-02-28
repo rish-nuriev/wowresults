@@ -28,6 +28,8 @@ DEBUG = config("DEBUG") == 'True'
 
 ALLOWED_HOSTS = ["127.0.0.1", "localhost", "rish333.pythonanywhere.com"]
 
+SITE_ID = 1
+
 # Application definition
 INSTALLED_APPS = [
     "account",
@@ -37,13 +39,17 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.postgres",
+    "django.contrib.sites",
+    "django.contrib.sitemaps",
+
     "tournaments",
     "articles",
+
     "rest_framework",
     "rest_framework_simplejwt",
     "django_extensions",
     "debug_toolbar",
-    "django.contrib.postgres",
     "django_email_verification",
     "django_bootstrap5",
 ]
