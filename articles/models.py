@@ -94,7 +94,9 @@ class Article(models.Model):
 
 
 class Comment(models.Model):
-    article = models.ForeignKey(Article, on_delete=models.CASCADE, related_name="comments")
+    article = models.ForeignKey(
+        Article, on_delete=models.CASCADE, related_name="comments"
+    )
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name="comments")
     body = models.TextField()
     created = models.DateTimeField(auto_now_add=True)
