@@ -4,7 +4,7 @@ from django.contrib.auth.forms import PasswordResetForm
 
 
 @shared_task
-def send_mail(
+def send_password_reset_mail(
     subject_template_name,
     email_template_name,
     context,

@@ -2,14 +2,18 @@ import logging
 from django.conf import settings
 from django.http import HttpResponse
 from tournaments.api_list.api_parsers import ApiParserError, ApiParsersContainer
-from tournaments import models, utils
+from tournaments import models
+from tournaments.tasks import async_error_logging
 import tournaments.api_list.api_classes as api_source
+from tournaments.tools import redis_tools
+
 
 main_api = getattr(api_source, settings.MAIN_API)()
 main_api_model = getattr(models, settings.MAIN_API_MODEL)()
 api_parsers_container = ApiParsersContainer(main_api)
 api_parser = api_parsers_container.get_api_parser()
 logger = logging.getLogger("basic_logger")
+REDIS_CONNECTION = redis_tools.get_redis_connection()
 
 
 def get_max_requests_count():
@@ -42,7 +46,7 @@ def request_tournaments_matches_by_date(tournaments, date_to_check) -> dict:
             date=date,
         )
 
-        utils.increase_api_requests_count()
+        increase_api_requests_count()
 
         response = main_api.send_request(endpoint, payload)
 
@@ -121,7 +125,7 @@ def request_stats_for_matches(matches):
         )
 
         response = main_api.send_request(endpoint, payload)
-        utils.increase_api_requests_count()
+        increase_api_requests_count()
 
         if response["errors"]:
             return None
@@ -160,7 +164,7 @@ def request_teams_by_tournaments(tournaments):
 
         response = main_api.send_request(endpoint, payload)
 
-        utils.increase_api_requests_count()
+        increase_api_requests_count()
 
         if response["errors"]:
             return HttpResponse("Response Errors: please check the logs for details")
@@ -193,9 +197,14 @@ def prepare_teams_data_for_saving(teams_by_country):
 
     return teams_to_save, teams_to_add_logo
 
-    # api_model_obj = main_api_model.__class__()
 
-    # api_model_obj.api_football_id = team_id
-    # api_model_obj.content_object = team_obj
+def check_api_requests(max_count=0):
+    error_message = "We have reached the limit of the API requests"
+    api_requests_count = redis_tools.get_api_requests_count(REDIS_CONNECTION)
+    if max_count and api_requests_count >= max_count:
+        async_error_logging.delay(error_message)
+        return HttpResponse(error_message)
 
-    # api_model_obj.save()
+
+def increase_api_requests_count():
+    redis_tools.increase_api_requests_count(REDIS_CONNECTION)

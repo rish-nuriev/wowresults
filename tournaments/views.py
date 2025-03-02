@@ -13,7 +13,8 @@ from rest_framework.decorators import (
     api_view,
 )
 
-from tournaments import api_tools, tasks, utils
+from tournaments import tasks
+from tournaments.tools import api_tools
 import tournaments.models as t_models
 
 
@@ -90,7 +91,7 @@ def get_results(request, process_date="", current=True):
 
     date_to_check = process_date or today
 
-    utils.check_api_requests(MAX_REQUESTS_COUNT)
+    api_tools.check_api_requests(MAX_REQUESTS_COUNT)
 
     tournaments = t_models.Tournament.reg_objects.get_tournaments_by_season(
         date_to_check.year, current=current
@@ -119,7 +120,7 @@ def get_teams(request):
     Автоматически связать команды не получится (название команды может быть записано по-другому)
     """
 
-    utils.check_api_requests(MAX_REQUESTS_COUNT)
+    api_tools.check_api_requests(MAX_REQUESTS_COUNT)
 
     tournaments = t_models.Tournament.objects.filter(pk=17)
 
@@ -138,7 +139,7 @@ def get_teams(request):
 @api_view(["GET"])
 def get_goals_stats(request):
 
-    utils.check_api_requests(MAX_REQUESTS_COUNT)
+    api_tools.check_api_requests(MAX_REQUESTS_COUNT)
 
     matches = t_models.Match.main_matches.get_matches_to_update_stats()
 

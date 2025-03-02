@@ -6,7 +6,8 @@ from django.contrib.auth.forms import (
     PasswordResetForm,
     SetPasswordForm,
 )
-from account.tasks import send_mail
+from account.tasks import send_password_reset_mail
+from football.utils.celery_utils import check_celery_connection
 
 
 class PrettyAuthenticationForm(AuthenticationForm):
@@ -34,16 +35,25 @@ class PrettyPasswordResetForm(PasswordResetForm):
         to_email,
         html_email_template_name=None,
     ):
-        context["user"] = context["user"].id
-
-        send_mail.delay(
-            subject_template_name=subject_template_name,
-            email_template_name=email_template_name,
-            context=context,
-            from_email=from_email,
-            to_email=to_email,
-            html_email_template_name=html_email_template_name,
-        )
+        if check_celery_connection():
+            context["user"] = context["user"].id
+            send_password_reset_mail.delay(
+                subject_template_name=subject_template_name,
+                email_template_name=email_template_name,
+                context=context,
+                from_email=from_email,
+                to_email=to_email,
+                html_email_template_name=html_email_template_name,
+            )
+        else:
+            super().send_mail(
+                subject_template_name,
+                email_template_name,
+                context,
+                from_email,
+                to_email,
+                html_email_template_name,
+            )
 
 
 class PrettySetPasswordForm(SetPasswordForm):
@@ -95,7 +105,9 @@ class UserRegistrationForm(forms.ModelForm):
         return cd["password2"]
 
     def clean_email(self):
-        email = self.cleaned_data.get('email')
+        email = self.cleaned_data.get("email")
         if email and User.objects.filter(email=email).exists():
-            raise forms.ValidationError('Пользователь с данным Email уже зарегистрирован')
+            raise forms.ValidationError(
+                "Пользователь с данным Email уже зарегистрирован"
+            )
         return email
