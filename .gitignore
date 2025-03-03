@@ -6,3 +6,4 @@ settings.py
 main.log
 mypy.ini
 .mypy_cache
+media/users
