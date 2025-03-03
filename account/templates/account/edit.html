@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}
+  Редактирование профиля
+{% endblock %}
+{% block content %}
+<div class="form-wrapper">
+  <h1>Редактирование профиля</h1>
+  <p>Вы можете отредактировать профиль используя форму ниже:</p>
+  <form method="post" enctype="multipart/form-data">
+    <p>Имя пользователя: <span> {{ request.user.username }}</span></p> 
+    <p>Email: <span> {{ request.user.email }}</span></p> 
+    {{ user_form.as_p }}
+    {{ profile_form.as_p }}
+    {% csrf_token %}
+    <p>
+      <input type="submit" class="btn btn-primary" value="Сохранить" />
+    </p>
+  </form>
+</div>
+{% endblock %}

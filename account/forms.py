@@ -7,11 +7,12 @@ from django.contrib.auth.forms import (
     SetPasswordForm,
 )
 from account.tasks import send_password_reset_mail
+from account.models import Profile
 from football.utils.celery_utils import check_celery_connection
 
 
 class PrettyAuthenticationForm(AuthenticationForm):
-    username = forms.CharField(widget=forms.TextInput(attrs={"class": "form-control"}))
+    username = forms.CharField(label="Имя пользователя либо Email", widget=forms.TextInput(attrs={"class": "form-control"}))
     password = forms.CharField(
         label="Пароль", widget=forms.PasswordInput(attrs={"class": "form-control"})
     )
@@ -111,3 +112,20 @@ class UserRegistrationForm(forms.ModelForm):
                 "Пользователь с данным Email уже зарегистрирован"
             )
         return email
+
+
+class UserEditForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ["first_name", "last_name"]
+
+        widgets = {
+            "first_name": forms.TextInput(attrs={"class": "form-control"}),
+            "last_name": forms.TextInput(attrs={"class": "form-control"}),
+        }
+
+
+class ProfileEditForm(forms.ModelForm):
+    class Meta:
+        model = Profile
+        fields = ["date_of_birth", "photo"]
