@@ -1,3 +1,4 @@
+from datetime import datetime
 from django import forms
 from django.contrib.auth import password_validation
 from django.contrib.auth.models import User
@@ -12,7 +13,10 @@ from football.utils.celery_utils import check_celery_connection
 
 
 class PrettyAuthenticationForm(AuthenticationForm):
-    username = forms.CharField(label="Имя пользователя либо Email", widget=forms.TextInput(attrs={"class": "form-control"}))
+    username = forms.CharField(
+        label="Имя пользователя либо Email",
+        widget=forms.TextInput(attrs={"class": "form-control"}),
+    )
     password = forms.CharField(
         label="Пароль", widget=forms.PasswordInput(attrs={"class": "form-control"})
     )
@@ -126,6 +130,20 @@ class UserEditForm(forms.ModelForm):
 
 
 class ProfileEditForm(forms.ModelForm):
+    current_year = datetime.now().year
+    date_of_birth = forms.DateField(
+        label="Дата рождения",
+        widget=forms.SelectDateWidget(
+            years=range(1900, current_year + 1),
+            attrs={"class": "form-control date-select"}
+        ),
+    )
+
     class Meta:
         model = Profile
         fields = ["date_of_birth", "photo"]
+
+        widgets = {
+            "first_name": forms.TextInput(attrs={"class": "form-control"}),
+            "last_name": forms.TextInput(attrs={"class": "form-control"}),
+        }
