@@ -10,11 +10,42 @@
     <p>Имя пользователя: <span> {{ request.user.username }}</span></p> 
     <p>Email: <span> {{ request.user.email }}</span></p> 
     {{ user_form.as_p }}
-    {{ profile_form.as_p }}
+
+    {% for field in profile_form %}
+      {% if field.name != 'photo' %}
+          <p>{{ field.label_tag }}{{ field }}</p>
+      {% endif %}
+    {% endfor %}
+
     {% csrf_token %}
+
+    {% if request.user.profile.photo %}
+      <img src="{{ request.user.profile.photo.url }}" class="current-photo" alt="Текущее фото профиля">
+    {% endif %}
+
+    <label for="id_photo" class="image-label">Обновить фото:</label>
+    <label for="id_photo" class="custom-file-upload">Выберите файл</label>
+    <input type="file" name="photo" id="id_photo" class="file-input">
+    <span id="file-name" class="file-name">Файл не выбран</span>
+
     <p>
       <input type="submit" class="btn btn-primary" value="Сохранить" />
     </p>
+
   </form>
+
+
 </div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+      const fileInput = document.getElementById("id_photo");
+      const fileName = document.getElementById("file-name");
+
+      fileInput.addEventListener("change", function() {
+          fileName.textContent = fileInput.files[0] ? fileInput.files[0].name : "Файл не выбран";
+      });
+  });
+</script>
+
 {% endblock %}

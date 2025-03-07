@@ -3,12 +3,14 @@ from django.contrib.auth.views import (
     LoginView,
     PasswordResetView,
     PasswordResetConfirmView,
+    PasswordChangeView,
 )
 from account import views
 from account.forms import (
     PrettyAuthenticationForm,
     PrettyPasswordResetForm,
     PrettySetPasswordForm,
+    PrettyPasswordChangeForm,
 )
 
 urlpatterns = [
@@ -21,6 +23,11 @@ urlpatterns = [
         name="password_reset",
     ),
     path(
+        "password_change/",
+        PasswordChangeView.as_view(form_class=PrettyPasswordChangeForm),
+        name="password_change",
+    ),
+    path(
         "reset/<uidb64>/<token>/",
         PasswordResetConfirmView.as_view(form_class=PrettySetPasswordForm),
         name="password_reset_confirm",
@@ -28,5 +35,5 @@ urlpatterns = [
     path("", include("django.contrib.auth.urls")),
     path("", views.dashboard, name="dashboard"),
     path("register/", views.register, name="register"),
-    path('edit/', views.edit, name='edit'),
+    path("edit/", views.edit, name="edit"),
 ]

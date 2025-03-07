@@ -1,3 +1,4 @@
+from datetime import datetime
 from django import forms
 from django.contrib.auth import password_validation
 from django.contrib.auth.models import User
@@ -5,6 +6,7 @@ from django.contrib.auth.forms import (
     AuthenticationForm,
     PasswordResetForm,
     SetPasswordForm,
+    PasswordChangeForm,
 )
 from account.tasks import send_password_reset_mail
 from account.models import Profile
@@ -12,7 +14,10 @@ from football.utils.celery_utils import check_celery_connection
 
 
 class PrettyAuthenticationForm(AuthenticationForm):
-    username = forms.CharField(label="Имя пользователя либо Email", widget=forms.TextInput(attrs={"class": "form-control"}))
+    username = forms.CharField(
+        label="Имя пользователя либо Email",
+        widget=forms.TextInput(attrs={"class": "form-control"}),
+    )
     password = forms.CharField(
         label="Пароль", widget=forms.PasswordInput(attrs={"class": "form-control"})
     )
@@ -58,6 +63,31 @@ class PrettyPasswordResetForm(PasswordResetForm):
 
 
 class PrettySetPasswordForm(SetPasswordForm):
+    new_password1 = forms.CharField(
+        label="Новый пароль",
+        widget=forms.PasswordInput(
+            attrs={"autocomplete": "new-password", "class": "form-control"}
+        ),
+        strip=False,
+        help_text=password_validation.password_validators_help_text_html(),
+    )
+    new_password2 = forms.CharField(
+        label="Подтверждение нового пароля",
+        strip=False,
+        widget=forms.PasswordInput(
+            attrs={"autocomplete": "new-password", "class": "form-control"}
+        ),
+    )
+
+
+class PrettyPasswordChangeForm(PasswordChangeForm):
+    old_password = forms.CharField(
+        label="Старый пароль",
+        widget=forms.PasswordInput(
+            attrs={"autocomplete": "new-password", "class": "form-control"}
+        ),
+        strip=False,
+    )
     new_password1 = forms.CharField(
         label="Новый пароль",
         widget=forms.PasswordInput(
@@ -126,6 +156,20 @@ class UserEditForm(forms.ModelForm):
 
 
 class ProfileEditForm(forms.ModelForm):
+    current_year = datetime.now().year
+    date_of_birth = forms.DateField(
+        label="Дата рождения",
+        widget=forms.SelectDateWidget(
+            years=range(1900, current_year + 1),
+            attrs={"class": "form-control date-select"},
+        ),
+    )
+
     class Meta:
         model = Profile
         fields = ["date_of_birth", "photo"]
+
+        widgets = {
+            "first_name": forms.TextInput(attrs={"class": "form-control"}),
+            "last_name": forms.TextInput(attrs={"class": "form-control"}),
+        }

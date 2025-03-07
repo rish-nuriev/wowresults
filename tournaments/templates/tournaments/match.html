@@ -36,6 +36,7 @@
                     {{ time }}' - {{stats.player|translite_player}} 
                     {% if stats.type == 'Own Goal' %} (автогол) {% endif %}
                     {% if stats.type == 'Penalty' %} (пенальти) {% endif %}
+                    {% if stats.type == 'Missed Penalty' %} (нереализованный пенальти) {% endif %}
                 </p></br></br></br>
             {% endif %}
             {% if stats.team == match.opponent.id_api_football %}
@@ -43,6 +44,7 @@
                     {{ time }}' - {{stats.player|translite_player}} 
                     {% if stats.type == 'Own Goal' %} (автогол) {% endif %}
                     {% if stats.type == 'Penalty' %} (пенальти) {% endif %}
+                    {% if stats.type == 'Missed Penalty' %} (нереализованный пенальти) {% endif %}
                 </p></br></br></br>
             {% endif %}
         {% endfor %}
