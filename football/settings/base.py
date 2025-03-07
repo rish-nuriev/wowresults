@@ -155,6 +155,7 @@ MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_POST_IMAGE = MEDIA_URL + "images/default.jpg"
+DEFAULT_PROFILE_IMAGE = MEDIA_URL + "images/profile.jpg"
 
 LOGIN_REDIRECT_URL = 'dashboard'
 LOGIN_URL = 'login'
