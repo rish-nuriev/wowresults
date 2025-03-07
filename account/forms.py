@@ -6,6 +6,7 @@ from django.contrib.auth.forms import (
     AuthenticationForm,
     PasswordResetForm,
     SetPasswordForm,
+    PasswordChangeForm,
 )
 from account.tasks import send_password_reset_mail
 from account.models import Profile
@@ -79,6 +80,31 @@ class PrettySetPasswordForm(SetPasswordForm):
     )
 
 
+class PrettyPasswordChangeForm(PasswordChangeForm):
+    old_password = forms.CharField(
+        label="Старый пароль",
+        widget=forms.PasswordInput(
+            attrs={"autocomplete": "new-password", "class": "form-control"}
+        ),
+        strip=False,
+    )
+    new_password1 = forms.CharField(
+        label="Новый пароль",
+        widget=forms.PasswordInput(
+            attrs={"autocomplete": "new-password", "class": "form-control"}
+        ),
+        strip=False,
+        help_text=password_validation.password_validators_help_text_html(),
+    )
+    new_password2 = forms.CharField(
+        label="Подтверждение нового пароля",
+        strip=False,
+        widget=forms.PasswordInput(
+            attrs={"autocomplete": "new-password", "class": "form-control"}
+        ),
+    )
+
+
 class UserRegistrationForm(forms.ModelForm):
     email = forms.EmailField(
         label="Email",
@@ -135,7 +161,7 @@ class ProfileEditForm(forms.ModelForm):
         label="Дата рождения",
         widget=forms.SelectDateWidget(
             years=range(1900, current_year + 1),
-            attrs={"class": "form-control date-select"}
+            attrs={"class": "form-control date-select"},
         ),
     )
 
