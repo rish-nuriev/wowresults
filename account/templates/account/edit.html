@@ -21,6 +21,8 @@
 
     {% if request.user.profile.photo %}
       <img src="{{ request.user.profile.photo.url }}" class="current-photo" alt="Текущее фото профиля">
+    {% else %}
+      <img src="{{ noimage }}" class="current-photo" alt="Текущее фото профиля">
     {% endif %}
 
     <label for="id_photo" class="image-label">Обновить фото:</label>

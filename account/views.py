@@ -1,4 +1,5 @@
 from django_email_verification import send_email
+from django.conf import settings
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django.contrib import messages
@@ -65,5 +66,6 @@ def edit(request):
     return render(
         request,
         "account/edit.html",
-        {"user_form": user_form, "profile_form": profile_form},
+        {"user_form": user_form, "profile_form": profile_form,
+         "noimage": settings.DEFAULT_PROFILE_IMAGE},
     )
