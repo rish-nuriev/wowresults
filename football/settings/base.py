@@ -10,11 +10,17 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 from pathlib import Path
-from decouple import config # type: ignore
+from decouple import Config, RepositoryEnv # type: ignore
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
+ENV_FILE = BASE_DIR / ".env"
+
+config = Config(RepositoryEnv(str(ENV_FILE)))
+
+
 
 
 # Quick-start development settings - unsuitable for production
@@ -226,7 +232,7 @@ LOGGING = {
             "formatter": "verbose",
         },
         "mail_admins": {
-            "level": "ERROR",
+            "level": "INFO",
             "class": "django.utils.log.AdminEmailHandler",
             "formatter": "verbose",
         },
