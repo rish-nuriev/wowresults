@@ -240,7 +240,7 @@ LOGGING = {
     "loggers": {
         "basic_logger": {
             "handlers": ["file", "mail_admins"],
-            "level": "INFO",
+            "level": "ERROR",
             "propagate": True,
         },
     },
