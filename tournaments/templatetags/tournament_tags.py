@@ -14,7 +14,7 @@ def show_tournaments(selected=0):
     tournaments = (
         Tournament.objects.annotate(total=Count("posts"))
         .filter(total__gt=0, season_api_football__gt=year)
-        .order_by("-total")
+        .order_by("total")
     )
     return {"tournaments": tournaments, "selected": selected}
 
