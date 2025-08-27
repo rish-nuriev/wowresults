@@ -1,5 +1,5 @@
 from __future__ import annotations
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 import logging
 from typing import Any, Optional, TypeVar
 from typing_extensions import Self
@@ -118,7 +118,9 @@ class MainMatchesManager(models.Manager[M]):
 
     def get_matches_by_date(self, date: datetime) -> models.QuerySet[M]:
         """Выборка матчей на определенную дату"""
-        return self.get_queryset().filter(date__date=date)
+        start = datetime.combine(date, datetime.min.time(), tzinfo=timezone.utc)
+        end = start + timedelta(days=1)
+        return self.get_queryset().filter(date__gte=start, date__lt=end)
 
     def get_matches_to_update_stats(self) -> models.QuerySet[M]:
         """Выборка 10 завершившихся матчей с незаполненной статистикой"""
