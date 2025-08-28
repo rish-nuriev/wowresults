@@ -1,6 +1,6 @@
 import logging
 from django.conf import settings
-from django.http import HttpResponse
+from django.http import JsonResponse
 from tournaments.api_list.api_parsers import ApiParserError, ApiParsersContainer
 from tournaments import models
 from tournaments.tasks import async_error_logging
@@ -15,6 +15,15 @@ api_parser = api_parsers_container.get_api_parser()
 logger = logging.getLogger("basic_logger")
 REDIS_CONNECTION = redis_tools.get_redis_connection()
 
+
+def common_error_response():
+    return JsonResponse(
+        {
+            "error": "Internal Server Error",
+            "message": "Please check the logs for details"
+        },
+        status=500
+    )
 
 def get_max_requests_count():
     return main_api.get_max_requests_count()
@@ -51,7 +60,7 @@ def request_tournaments_matches_by_date(tournaments, date_to_check) -> dict:
         response = main_api.send_request(endpoint, payload)
 
         if response["errors"]:
-            return HttpResponse("Response Errors: please check the logs for details")
+            return common_error_response()
 
         matches[t.id] = api_parser.parse_matches(response)
 
@@ -86,10 +95,10 @@ def prepare_matches_data_for_saving(tournament_matches: dict):
                 except AttributeError:
                     message = f"get_{option} method should be realized in {api_parser.__class__.__name__}"
                     logger.error(message)
-                    return HttpResponse("Errors: please check the logs for details")
+                    return common_error_response()
                 except ApiParserError as e:
                     logger.error(e)
-                    return HttpResponse("Errors: please check the logs for details")
+                    return common_error_response()
 
             team1 = main_api_model.get_team_by_api_id(match_data["main_team_id"])
             team2 = main_api_model.get_team_by_api_id(match_data["opponent_id"])
@@ -128,7 +137,7 @@ def request_stats_for_matches(matches):
         increase_api_requests_count()
 
         if response["errors"]:
-            return None
+            return common_error_response()
 
         goals = api_parser.parse_goals(response)
         goals_stats = api_parser.get_goals_stats(goals)
@@ -167,7 +176,13 @@ def request_teams_by_tournaments(tournaments):
         increase_api_requests_count()
 
         if response["errors"]:
-            return HttpResponse("Response Errors: please check the logs for details")
+            return JsonResponse(
+                {
+                    "error": "Internal Server Error",
+                    "message": "Please check the logs for details"
+                },
+                status=500
+            )            
 
         teams = api_parser.parse_teams(response)
 
@@ -203,7 +218,10 @@ def check_api_requests(max_count=0):
     api_requests_count = redis_tools.get_api_requests_count(REDIS_CONNECTION)
     if max_count and api_requests_count >= max_count:
         async_error_logging.delay(error_message)
-        return HttpResponse(error_message)
+        return JsonResponse(
+            {"error": error_message},
+            status=429  # HTTP status "Too Many Requests"
+        )
 
 
 def increase_api_requests_count():
