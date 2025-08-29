@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 
+from functools import wraps
 import logging
 from django.http import HttpResponse, HttpResponseNotFound, Http404
 from django.shortcuts import get_object_or_404
@@ -68,10 +69,20 @@ class ShowMatch(DetailView):
 def page_not_found(request, exception):
     return HttpResponseNotFound("<h1>Страница не найдена</h1>")
 
+def validate_request(func):
+    @wraps(func)
+    def wrapper(request, *args, **kwargs):
+        if not api_tools.check_api_requests(MAX_REQUESTS_COUNT):
+            error_message = "We have reached the limit of the API requests"
+            tasks.async_error_logging.delay(error_message)
+            return HttpResponse(error_message, status=429) 
+    return wrapper
 
-@permission_classes((IsAuthenticated,))
-@authentication_classes((JWTAuthentication,))
+
 @api_view(["GET"])
+@authentication_classes((JWTAuthentication,))
+@permission_classes((IsAuthenticated,))
+@validate_request
 def get_results(request, process_date="", current=True):
     """
     Метод запрашивает результаты матчей через АПИ.
@@ -91,8 +102,6 @@ def get_results(request, process_date="", current=True):
 
     date_to_check = process_date or today
 
-    api_tools.check_api_requests(MAX_REQUESTS_COUNT)
-
     tournaments = t_models.Tournament.reg_objects.get_tournaments_by_season(
         date_to_check.year, current=current
     )
@@ -108,9 +117,10 @@ def get_results(request, process_date="", current=True):
     return HttpResponse(info_message)
 
 
-@permission_classes((IsAuthenticated,))
-@authentication_classes((JWTAuthentication,))
 @api_view(["GET"])
+@authentication_classes((JWTAuthentication,))
+@permission_classes((IsAuthenticated,))
+@validate_request
 def get_teams(request):
     """
     Данный метод создает новые команды а также может обновить данные
@@ -119,8 +129,6 @@ def get_teams(request):
     можно будет использовать только если вручную прописывать их связи по ID в админке
     Автоматически связать команды не получится (название команды может быть записано по-другому)
     """
-
-    api_tools.check_api_requests(MAX_REQUESTS_COUNT)
 
     tournaments = t_models.Tournament.objects.filter(pk=17)
 
@@ -134,12 +142,11 @@ def get_teams(request):
     return HttpResponse("Request completed")
 
 
-@permission_classes((IsAuthenticated,))
-@authentication_classes((JWTAuthentication,))
 @api_view(["GET"])
+@authentication_classes((JWTAuthentication,))
+@permission_classes((IsAuthenticated,))
+@validate_request
 def get_goals_stats(request):
-
-    api_tools.check_api_requests(MAX_REQUESTS_COUNT)
 
     matches = t_models.Match.main_matches.get_matches_to_update_stats()
 
