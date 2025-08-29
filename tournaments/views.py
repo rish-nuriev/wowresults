@@ -2,7 +2,12 @@ from datetime import datetime, timezone
 
 from functools import wraps
 import logging
-from django.http import HttpResponse, HttpResponseNotFound, Http404
+from django.http import (
+    HttpResponse, 
+    HttpResponseNotFound, 
+    Http404, 
+    JsonResponse,
+)
 from django.shortcuts import get_object_or_404
 from django.views.generic import DetailView, ListView
 
@@ -75,7 +80,8 @@ def validate_request(func):
         if not api_tools.check_api_requests(MAX_REQUESTS_COUNT):
             error_message = "We have reached the limit of the API requests"
             tasks.async_error_logging.delay(error_message)
-            return HttpResponse(error_message, status=429) 
+            return HttpResponse(error_message, status=429)
+        return func(request, *args, **kwargs)
     return wrapper
 
 
@@ -114,7 +120,16 @@ def get_results(request, process_date="", current=True):
         f"{date_to_check} has been processed. And it can be processed again if needed"
     )
     logger.info(info_message)
-    return HttpResponse(info_message)
+
+    finished = t_models.Match.main_matches.get_todays_finished_matches()
+
+    return JsonResponse(
+        {
+            "message": info_message, 
+            "matches": len(matches_to_save),
+            "finished_matches": len(finished),
+        }
+    )
 
 
 @api_view(["GET"])
