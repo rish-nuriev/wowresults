@@ -122,6 +122,14 @@ class MainMatchesManager(models.Manager[M]):
         end = start + timedelta(days=1)
         return self.get_queryset().filter(date__gte=start, date__lt=end)
 
+    def get_todays_finished_matches(self) -> models.QuerySet[M]:
+        """Выборка завершихся сегодня матчей"""
+        today = datetime.now(timezone.utc).date()
+        return (
+            self.get_matches_by_date(today)
+            .filter(status=Match.Statuses.FULL_TIME)
+        )
+
     def get_matches_to_update_stats(self) -> models.QuerySet[M]:
         """Выборка 10 завершившихся матчей с незаполненной статистикой"""
         return (
