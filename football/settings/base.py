@@ -205,6 +205,8 @@ EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
 EMAIL_PORT = config("EMAIL_PORT")
 EMAIL_USE_TLS = config("EMAIL_USE_TLS")
 
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
 #REDIS SETTINGS
 REDIS_HOST = config("REDIS_HOST")
 REDIS_PORT = config("REDIS_PORT")
@@ -237,7 +239,6 @@ LOGGING = {
             "class": "django.utils.log.AdminEmailHandler",
             "formatter": "verbose",
         },
-        "console": {"class": "logging.StreamHandler"},
     },
     "loggers": {
         "basic_logger": {
@@ -245,8 +246,6 @@ LOGGING = {
             "level": "ERROR",
             "propagate": True,
         },
-        "django": {"handlers": ["console"], "level": "DEBUG"},
-        "django_email_verification": {"handlers": ["console"], "level": "DEBUG"},        
     },
 }
 SHELL_PLUS_PRINT_SQL_TRUNCATE = None
