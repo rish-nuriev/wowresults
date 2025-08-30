@@ -193,20 +193,18 @@ EMAIL_FROM_ADDRESS = 'nuriev_rishat@mail.ru'
 EMAIL_MAIL_SUBJECT = 'Подтвердите ваш Email {{ user.username }}'
 EMAIL_MAIL_HTML = 'registration/mail_body.html'
 EMAIL_MAIL_PLAIN = 'registration/mail_body.txt'
-EMAIL_TOKEN_LIFE = 60 * 60
+EMAIL_MAIL_TOKEN_LIFE = 60 * 60
 EMAIL_MAIL_PAGE_TEMPLATE = 'registration/confirm_template.html'
 EMAIL_PAGE_DOMAIN = config("EMAIL_PAGE_DOMAIN") # Host
 # EMAIL_MULTI_USER = True  # optional (defaults to False)
 
 # Конфигурация сервера электронной почты
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = config("EMAIL_HOST")
 EMAIL_HOST_USER = config("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
 EMAIL_PORT = config("EMAIL_PORT")
 EMAIL_USE_TLS = config("EMAIL_USE_TLS")
-
-EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
-EMAIL_FILE_PATH = '/home/Rish333/email_test/'
 
 #REDIS SETTINGS
 REDIS_HOST = config("REDIS_HOST")
