@@ -237,6 +237,7 @@ LOGGING = {
             "class": "django.utils.log.AdminEmailHandler",
             "formatter": "verbose",
         },
+        "console": {"class": "logging.StreamHandler"},
     },
     "loggers": {
         "basic_logger": {
@@ -244,6 +245,8 @@ LOGGING = {
             "level": "ERROR",
             "propagate": True,
         },
+        "django": {"handlers": ["console"], "level": "DEBUG"},
+        "django_email_verification": {"handlers": ["console"], "level": "DEBUG"},        
     },
 }
 SHELL_PLUS_PRINT_SQL_TRUNCATE = None
